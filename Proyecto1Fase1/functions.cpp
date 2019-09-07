@@ -1,10 +1,113 @@
 #include "functions.h"
-
+#include <ctime>
+#include <cstdlib>
+#include <iostream>
+#include <fstream>
+#include <algorithm>
+#include <fstream>
+#include <iostream>
+#include <string>
+#include <stdio.h>
+#include <string.h>
+#include <sstream>
 Functions::Functions()
 {
 
 }
+void Functions::EscribirRandom(int Num){
+    Functions *F = new Functions();
+    std::ifstream t("Dita.txt");
+    std::stringstream buffer ;
+    buffer << t.rdbuf();
+    std::string s = buffer.str();
+    std::string delimiter = ",";
+    size_t pos = 0;
+    std::string token;
+    std::string Escritura="";
+    while ((pos = s.find(delimiter)) != std::string::npos) {
+        token = s.substr(0, pos);
+        if(F->IF(Escritura,"")){
+        Escritura=token;
+        }
+        else{
+        Escritura=Escritura+","+token;
+        }
+        s.erase(0, pos + delimiter.length());
+    }
+    Escritura=Escritura+","+s+","+std::to_string(Num);
 
+
+    std::ofstream myfile;
+      myfile.open ("Dita.txt");
+      myfile << Escritura;
+      myfile.close();
+    //std::cout<<Escritura<<std::endl;
+}
+bool Functions::Valido(int Num){
+    Functions *F = new Functions();
+    std::ifstream t("Dita.txt");
+    std::stringstream buffer;
+    buffer << t.rdbuf();
+    std::string s = buffer.str();
+    std::string delimiter = ",";
+    size_t pos = 0;
+    std::string token;
+    while ((pos = s.find(delimiter)) != std::string::npos) {
+        token = s.substr(0, pos);
+
+        if(atoi(token.data())==Num){
+            return false;
+        }
+
+        s.erase(0, pos + delimiter.length());
+    }
+
+    if(atoi(s.data())==Num){
+        return false;
+    }
+
+    return true;
+}
+int Functions::GenerarNumeroRandom(){
+
+    if(this->ExisteArchivo("Dita.txt")==false){
+        FILE *f;
+        char D;
+        f=fopen("Dita.txt","w");
+        D='0';
+        fwrite(&D,sizeof(D),1,f);
+        D=',';
+        fwrite(&D,sizeof(D),1,f);
+        D='0';
+        fwrite(&D,sizeof(D),1,f);
+        fclose(f);
+    }
+
+    bool Salir=false;
+    int R =0;
+    while (Salir==false) {
+        srand(time(0));
+
+        R= (rand() % 1024*1024) + 1;
+        Salir =Valido(R);
+    }
+    EscribirRandom(R);
+    return R;
+}
+void Functions::Fecha(struct tm *Dita){
+    std::time_t t = std::time(nullptr);
+    std::tm* now = std::localtime(&t);
+    now->tm_mon=now->tm_mon+1;
+    now->tm_year=now->tm_year + 1900;
+    *Dita=*now;
+}
+std::string Functions::FechaString(struct tm *Dita){
+    std::string Fecha="";
+    Fecha=std::to_string(Dita->tm_mday)+"/"+std::to_string(Dita->tm_mon)+"/"+std::to_string(Dita->tm_year);
+    std::string Hora="";
+    Hora=std::to_string(Dita->tm_hour)+":"+std::to_string(Dita->tm_min)+"/"+std::to_string(Dita->tm_sec);
+    return Fecha+"  "+Hora;
+}
 int Functions::LogicaFinal(PAR Extendida,const char *Path ){
     FILE *f;
     EBR Cur;
@@ -516,7 +619,6 @@ bool Functions::ExisteArchivo(const char *Path){
     \brief Busca Si El Tamaño Disponible En El Disco Danto Path Y Tamaño Requerido Del Bloque .
 */
 int Functions::LogicalFirstFit(int Size, const char *Path, int Begin, int End){
-
     FILE *f;
     EBR Cur;
     //Logic.part_next=0;

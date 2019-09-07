@@ -16,12 +16,14 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
     disco.cpp \
+    ext.cpp \
     functions.cpp \
         main.cpp \
     menu.cpp \
     parser.cpp \
     reports.cpp \
-    scanner.cpp
+    scanner.cpp \
+    sistema.cpp
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
@@ -30,9 +32,12 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 HEADERS += \
     disco.h \
+    ext.h \
     functions.h \
     menu.h \
     parser.h \
     reports.h \
     scanner.h \
-    structs.h
+    sistema.h \
+    structs.h \
+    structsext.h

@@ -5,25 +5,76 @@
 /*
  * Falta El Raid
  *+++++MKDISK++++++++++++++++++++++++++++
-    Terminar MkDisk Con los tamaños necesarios
-    Terminar Asignación De Fechas
-    Terminar Los Fits
-    Terminar El Identificador Random
+    Terminar El Identificador Random Y Unico
  *+++++RMDISK++++++++++++++++++++++++++++
     Falta Implementar Eliminación Del Raid
 *+++++FDISK++++++++++++++++++++++++++++
-* Todo
-* Worsfti y Best Erroneso
-* Hacer Los Fits
-*Borrar Para Particiones Logicas/
-* Graficar no lo hace bien si se borra la primera particion logica
-* Borrar el primero de las particiones logicas
-* FDIsk Add problema con buscar desde hasta donde, especial el hasta
-* Falta poner número a los reportes
-* Guardar en ubicación correcta reportes
-* LLamar A Los Reportes
-//FDISK
 */
+//MKFS
+void Menu::MKFS(const char *Id, const char *Type, int EXT){
+    std::cout<<"Falta Limpiar Particion Antes"<<std::endl;
+
+    Disco *Ptr=this->PrimerDisco;
+    if(Ptr==nullptr){
+        std::cout<<"No Hay Ninguna Particion Montada En El Sistema"<<std::endl;
+    }else {
+        this->PrimerDisco->FormatearParticion(Id,EXT);
+    }
+
+}
+//FDISK
+
+
+
+bool Menu::DisponibleBorrarParticionMontada(const char *Id){
+    if(this->PrimerDisco==nullptr){
+        return true;
+    }else{
+        return this->PrimerDisco->ParticionLibreParaBorrar(Id);
+    }
+
+}
+
+bool Menu::DisponibleBorrarDisco(const char *Path){
+    if(this->PrimerDisco==nullptr){
+            return true;
+    }else{
+        return this->PrimerDisco->DiscoLibreParaBorrar(Path);
+    }
+
+}
+//REPORTES
+void Menu::REP(const char *Id, const char *Name, const char *Path){
+    Disco *Ptr=this->PrimerDisco;
+    if(Ptr==nullptr){
+        std::cout<<"No Hay Ninguna Particion Montada En El Sistema";
+    }else {
+        this->PrimerDisco->Reporte(Id,Path,Name);
+    }
+
+}
+
+//Metodos Auxiliares
+void Menu::LimpiarDiscosVacios(){
+    Disco *Temporal=this->PrimerDisco;
+    if(Temporal==nullptr)return;
+    if(Temporal->Lista.count()==0){
+        this->PrimerDisco=Temporal->Siguiente;
+        return;
+    }
+
+    while(Temporal->Siguiente!=nullptr){
+        if(Temporal->Siguiente->Lista.count()==0){
+            Temporal->Siguiente=Temporal->Siguiente->Siguiente;
+        }
+        Temporal=Temporal->Siguiente;
+    }
+    if(Temporal->Lista.count()==0){
+        this->PrimerDisco=Temporal->Siguiente;
+        return;
+    }
+
+}
 
 //UNMOUNT
 void Menu::UNMOUNT(const char *Name){
@@ -31,37 +82,56 @@ void Menu::UNMOUNT(const char *Name){
         std::cout<<"No Hay Ningún Disco En El Sistema"<<std::endl;
     }else{
         this->PrimerDisco->BorrarParticion(Name);
-
+        this->LimpiarDiscosVacios();
     }
 
 }
 //MOUNT
 void Menu::MOUNT(const char *Path,const char *Name){
-    if(this->PrimerDisco==nullptr){
-        this->PrimerDisco=new Disco(Path,nullptr);
+
+    if(this->PrimerDisco==nullptr){        
+        this->PrimerDisco=new Disco(Path,nullptr);       
+        this->PrimerDisco->AgregarParticion(Name);
+        this->LimpiarDiscosVacios();
     }else{
         Disco *Temporal=this->PrimerDisco;
         while(Temporal!=nullptr){
+
             if(Fun->IF(Temporal->Path,Path)){
                 Temporal->AgregarParticion(Name);
+                this->LimpiarDiscosVacios();
                 return;
             }
             Temporal=Temporal->Siguiente;
         }
+
+
+
         this->PrimerDisco=new Disco(Path,this->PrimerDisco);
         this->PrimerDisco->AgregarParticion(Name);
+        this->LimpiarDiscosVacios();
     }
 
 }
 
 //REMOVE DISK
 void Menu::RMDISK(const char *Path){
+    if(Fun->ExisteArchivo(Path)==false){
+        std::cout<<"No Existe La Ubicacion "<<Path<<std::endl;
+        return;
+    }
+
+    if(this->DisponibleBorrarDisco(Path)==false){
+        std::cout<<"No se puede borrar disco porque esta montado en memoria"<<std::endl;
+        return;
+    }
+
        if(remove(Path)== 0) {
           std::cout<<"Disco Borrado"<<std::endl;
        } else {
-         std::cout<<"No Se Pudo Borrar El Disco"<<std::endl;
+         std::cout<<"No Se Pudo Borrar El Disco El Archivo Esta En Uso "<<std::endl;
        }
-    std::cout<<"No Esta Implementado Para El Raid"<<std::endl;
+
 }
 //FDISKADD
 /*!
@@ -111,7 +181,7 @@ void Menu::AgregarMas(int Size, const char *Path, const char *Name){
               fwrite(&Logic,sizeof(EBR),1,f);
               fclose(f);
 
-              std::cout<<"Se Agrego Un Espacio De "<<Size<<" A La Paricion Logica '"<<Name<<"'"<<std::endl;
+              std::cout<<"Se Agrego Un Espacio De "<<Size<<" A La Particion Logica '"<<Name<<"'"<<std::endl;
           }
         }
     }else{
@@ -130,7 +200,7 @@ void Menu::AgregarMas(int Size, const char *Path, const char *Name){
             fwrite(&Main,sizeof(MBR),1,f);
             fclose(f);
 
-            std::cout<<"Se Agrego Un Espacio De "<<Size<<" A La Paricion Primaria|Extendida '"<<Name<<"'"<<Name<<std::endl;
+            std::cout<<"Se Agrego Un Espacio De "<<Size<<" A La Particion Primaria|Extendida '"<<Name<<"'"<<std::endl;
 
         }
     }
@@ -218,6 +288,11 @@ void Menu::FDISKDelete(const char *Delete, const char *Path, const char *Name){
     }
     fread(&Main,sizeof(MBR),1,f);
     fclose(f);
+    if(this->DisponibleBorrarParticionMontada(Name)==false){
+        std::cout<<"No Se Puede Borrar La Partición:"<<Name<<" Debido a que esta montada en memoria"<<std::endl;
+        return ;
+    }
+
     int ParIndex=Fun->SearchPAR(Name,Path);
 
     if(ParIndex==-1){
@@ -284,8 +359,6 @@ void Menu::DeleteFastLogic(EBR InputLogic, const char *Path){
 
     //Ver Si A Eliminar Es La Unica O Primera De Disco
     if(Extended.part_start==InputLogic.part_start){
-
-
         //Es la Unica
         if(InputLogic.part_next==-1){
 
@@ -301,6 +374,7 @@ void Menu::DeleteFastLogic(EBR InputLogic, const char *Path){
             return;
         }//Es la primera
         else{
+
             fseek(f,Extended.part_start,SEEK_SET);
             fread(&Logic,sizeof(EBR),1,f);
             fseek(f,Extended.part_start,SEEK_SET);
@@ -399,7 +473,6 @@ void Menu::DeleteFull(PAR Parti, const char *Path){
 //
 void Menu::FDisk(int Size, const char *Fit, char Unit, const char *Path, char Type,const char *Name){
     Type=char(tolower(Type));
-    Size=Fun->Mult(Size,Unit);
     switch (Type) {
         case 'p':{
             this->NewPrimary(Size,Fit,Unit,Path,Name);
@@ -419,6 +492,7 @@ void Menu::FDisk(int Size, const char *Fit, char Unit, const char *Path, char Ty
 
 void Menu::NewPrimary(int Size, const char *Fit, char Unit, const char *Path,const char *Name){
     int Index=HasSlot(Path);
+    int Original=Size;
     Size=Fun->Mult(Size,Unit);
     FILE *f;
     MBR r;
@@ -428,18 +502,14 @@ void Menu::NewPrimary(int Size, const char *Fit, char Unit, const char *Path,con
     }
     fread(&r,sizeof(MBR),1,f);
     fclose(f);
-    //std::cout<<r.mbr_partition[Index].part_status<<std::endl;
     if(Index==-1){
         Fun->Out("Este Disco Ya Llego Al Limite De Particiones Primarias");
     }else{
-        //std::cout<<Index<<std::endl;
-
-
         char SubFit [2];
         SubFit[0]=Fit[0];
         SubFit[1]=Fit[1];
         int Fit = Fun->DiskFit(SubFit,Size,Path);
-        std::cout<<Fit<<"--P--"<<Size<<std::endl;
+        std::cout<<"Se Creo Particion Primaria: "<<Name<< " De Tamanio:"<<Original<<Unit<<" A Partir Del Byte:"<<Fit<<" En El Disco:"<<Path<<std::endl;
         if(Fit==-1){
             Fun->Out("No Hay Espacio Suficiente Para La Particion");
         }else{
@@ -461,6 +531,7 @@ void Menu::NewPrimary(int Size, const char *Fit, char Unit, const char *Path,con
     }
 }
 void Menu::NewExtended(int Size, const char *Fit, char Unit, const char *Path,const char *Name){
+    int Original=Size;
     int Index=HasSlot(Path);
     Size=Fun->Mult(Size,Unit);
     FILE *f;
@@ -482,7 +553,7 @@ void Menu::NewExtended(int Size, const char *Fit, char Unit, const char *Path,co
         SubFit[0]=Fit[0];
         SubFit[1]=Fit[1];
         int Fit = Fun->DiskFit(SubFit,Size,Path);
-        std::cout<<Fit<<"--E--"<<Size<<std::endl;
+        std::cout<<"Se Creo Particion Extendida "<<Name<< " De Tamanio:"<<Original<<Unit<<" A Partir Del Byte:"<<Fit<<" En El Disco:"<<Path<<std::endl;
         if(Fit==-1){
             Fun->Out("No Hay Espacio Suficiente Para La Particion");
         }else{
@@ -528,7 +599,7 @@ void Menu::FillName(char *Arra, const char *Input){
     strcpy(Arra, Input);
 }
 void Menu::NewLogical(int Size, const char *Fit, char Unit, const char *Path,const char *Name){
-
+    int Original=Size;
     Size=Fun->Mult(Size,Unit);
     if(Size<=int(sizeof (EBR))){
         Fun->Out("El Tamaño dado a la particion logica es muy pequeño");
@@ -599,12 +670,8 @@ void Menu::NewLogical(int Size, const char *Fit, char Unit, const char *Path,con
         Logic.part_size=Size;
         FillName(Logic.part_name,Name);
 
-        if(Logic.part_next==-1){
-            std::cout<<(NewLog)<<"--"<<"L1"<<"--"<< NewLog+(Size)<<std::endl;            
-        }   else{
-            //No se Cambia Logic.par t_next=-1;
-            std::cout<<(NewLog)<<"--"<<"L1S"<<"--"<< NewLog+(Size)<<std::endl;
-        }
+
+        std::cout<<"Se Creo Particion Logica "<<Name<< " De Tamanio:"<<Original<<Unit<<" A Partir Del Byte:"<<NewLog<<" En El Disco:"<<Path<<std::endl;
 
 
         f=fopen(Path,"r+");
@@ -618,8 +685,8 @@ void Menu::NewLogical(int Size, const char *Fit, char Unit, const char *Path,con
 
 
     if(NewLog==-1){
-        Fun->Out("No Hay Espacio Para La Unidad Logica En Esta Particion Extendida");
-        std::cout<<Size<<"---"<<Extended.part_start<<"---"<<Extended.part_start+Extended.part_size<<std::endl;
+        Fun->Out("No Hay Espacio Para La Unidad Logica  En Esta Particion Extendida");
+        //std::cout<<Size<<"---"<<Extended.part_start<<"---"<<Extended.part_start+Extended.part_size<<std::endl;
     }else{
 
         f=fopen(Path,"r+");
@@ -642,7 +709,8 @@ void Menu::NewLogical(int Size, const char *Fit, char Unit, const char *Path,con
         fwrite(&NewLogic,sizeof (EBR),1,f);
 
         fclose(f);
-        std::cout<<NewLog<<"--"<<"L2"<<"--"<<NewLog+(Size)<<std::endl;
+        std::cout<<"Se Creo Particion Logica  "<<Name<< " De Tamanio:"<<Original<<Unit<<" A Partir Del Byte:"<<NewLog<<" En El Disco:"<<Path<<std::endl;
+
 
         this->FillDisk(NewLog+int(sizeof(EBR)),NewLog+(Size),'c',Path);
     }
@@ -679,8 +747,12 @@ int Menu::HasSlot(const char *Path){
     \brief Aquí Se Inicia El Menú.
 */
 void Menu::NewMenu(){
+
+
+
+    if(true){
     Fun->Out("-----------------NewMenu--------------");
-    Mkdisk(1024,"ff",'q',"Disco.disk");
+    Mkdisk(100,"ff",'M',"Disco.disk");
     FDisk(50,"ff",'q',"Disco.disk",'p',"a");
     this->FDISKAdd(100,"Disco.disk","a");
     FDisk(100,"ff",'q',"Disco.disk",'p',"b");
@@ -693,42 +765,43 @@ void Menu::NewMenu(){
     //FDISKDelete("fast","Disco.disk","d");//ELIMINANDO PARTICIONES PRIMARIAS|EXTENDIDA
 
 
+
     FDisk(50,"ff",'q',"Disco.disk",'l',"e");
     FDisk(50,"ff",'q',"Disco.disk",'l',"f");
     FDisk(50,"ff",'q',"Disco.disk",'l',"g");
     FDisk(50,"ff",'q',"Disco.disk",'l',"h");
     FDisk(50,"ff",'q',"Disco.disk",'l',"i");
     FDisk(50,"ff",'q',"Disco.disk",'l',"j");
+    MOUNT("Disco.disk","a");
+    //this->REP("vda1","mbr","I:\\build-Proyecto1Fase1-Desktop_Qt_5_13_0_MinGW_32_bit-Debug\\Bum.png");
+    MKFS("vda1","full",1);
 
-    /*FDISKDelete("fast","Disco.disk","e");//ELIMINANDO PARTICIONES LOGICAS}
-    FDISKDelete("fast","Disco.disk","f");//ELIMINANDO PARTICIONES LOGICAS}
-    FDISKDelete("fast","Disco.disk","h");//ELIMINANDO PARTICIONES LOGICAS}*/
-    Fun->Out("-----------------Graficar--------------");
+    //FDISKDelete("fast","Disco.disk","e");//ELIMINANDO PARTICIONES LOGICAS}
+    //FDISKDelete("fast","Disco.disk","f");//ELIMINANDO PARTICIONES LOGICAS}
+    //FDISKDelete("fast","Disco.disk","h");//ELIMINANDO PARTICIONES LOGICAS}
+    //Fun->Out("-----------------Graficar--------------");
     //RMDISK("Disco.disk");
-    Repo->Graphviz("Disco.disk");
-
-
-
-
-
-    RMDISK("Disco.disk");
+    //Repo->Graphviz("Disco.disk","I:\\Tnt.png");
+    //RMDISK("Disco.disk");
+    }
 }
 /*!
     \class QCache
     \brief Crea Disco Nuevo.
 */
 void Menu::Mkdisk(int Size, const char *Fit, char Unit, const char *Path){
+    int Origi=Size;
     FILE *f;
     MBR r;
     f=fopen(Path,"w");
     Size=Fun->Mult(Size,Unit);
     if (!f){
+        std::cout<<"No Se Pudo Crear El Disco En La Ubicacion "<<Path<<std::endl;
         return ;
     }else{
-        const char *Date="07/08/2019";
         r.mbr_tamano=Size;
-        //Date(&r.mbr_fecha_creacion);
-        //Random(&r.mbr_disk_signature);
+        Fun->Fecha(&r.mbr_fecha_creacion);
+        r.mbr_disk_signature=Fun->GenerarNumeroRandom();
         FillPAR(&r.mbr_partition[0]);
         FillPAR(&r.mbr_partition[1]);
         FillPAR(&r.mbr_partition[2]);
@@ -739,6 +812,11 @@ void Menu::Mkdisk(int Size, const char *Fit, char Unit, const char *Path){
         fclose(f);
         FillDisk(sizeof(MBR),Size,'\0',Path);
     }
+    if(Fun->ExisteArchivo(Path)){
+        std::cout<<"Se Creo Creo Disco Duro Tamanio:"<<Origi<<Unit<<" En:"<<Path<<std::endl;
+    }
+
+
   // std::cout<<BlockSize((sizeof(MBR)),Path)<<std::endl;
 }
 void Menu::FillPAR(PAR *NPAR){
@@ -756,6 +834,20 @@ void Menu::FillPAR(PAR *NPAR){
 void Menu::FillDisk(int Begin, int Size, char Character,const char *Path){
     FILE *f;
     f=fopen(Path,"r+");
+    int Kilo=Size/1024;
+    if(Kilo>0){
+        char Buffi[1024];
+        for (int i=0;i<1024;i++) {
+            Buffi[i]=Character;
+        }
+
+        fseek(f,Begin,SEEK_SET);
+        for(int i=0;i<Kilo;i++){
+            fwrite(&Buffi,sizeof (Buffi),1,f);
+        }
+
+    }
+    Begin=Begin+(Kilo*1024);
     fseek(f,Begin,SEEK_SET);
     for(int i=Begin;i<Size;i++){
         fwrite(&Character,sizeof (Character),1,f);

@@ -15,6 +15,10 @@
 class Menu
 {
 public:
+    //MKFS
+    void MKFS(const char *Id,const char *Type,int EXT);
+    //REP
+    void REP(const char *Id,const char *Name,const char *Path);
     //AGREGAR
     void FDISKAdd(int Size,const char *Path,const char *Name);
     //MONTAR
@@ -26,10 +30,14 @@ public:
     void Mkdisk(int Size,const char Fit[2],char Unit,const char *Path);
     //FDisk
     void FDisk(int Size,const char Fit[2],char Unit,const char *Path,char Type,const char *Name);
-
+    void FDISKDelete(const char *Delete,const char *Path,const char *Name);
     //Menu
     Menu();
 private:
+    bool DisponibleBorrarParticionMontada(const char *Id);
+    bool DisponibleBorrarDisco(const char *Path);
+
+    void LimpiarDiscosVacios();
     void ReducirLogica(int Size, const char *Path, EBR Ext,const char *Name);
     void ReducirPrimaria(int Size,const char *Path,int Indice);
     void AgregarMas(int Size,const char *Path,const char *Name);
@@ -45,7 +53,7 @@ private:
     //
     //FDISK
         //FDISKDELETE
-        void FDISKDelete(const char *Delete,const char *Path,const char *Name);
+
         void DeleteFastLogic(EBR InputLogic,const char *Path);
         void DeleteFullLogic(EBR InputLogic,const char *Path);
         void DeleteFast(PAR Parti,const char *Path);

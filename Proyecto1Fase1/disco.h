@@ -6,9 +6,12 @@
 class Disco
 {
 public:
+    void FormatearParticion(const char *Nombre,int Tipo);
+    bool ParticionLibreParaBorrar(const char *Nombre);
+    bool DiscoLibreParaBorrar(const char *Nombre);
     QList <MOU> Lista;
-    Disco(const char *Path,Disco *Nuevo);
-    const char *Path;
+    Disco(std::string Path,Disco *Nuevo);
+    std::string Path;
     Disco *Siguiente;
     int Num;
     std::string Apodo;

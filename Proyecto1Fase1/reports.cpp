@@ -11,13 +11,13 @@ std::string Reports::TablaPAR(PAR Parti,int Num){
     std::string  Reporte="";
     Reporte = Reporte+"\n <TR>  <TD> "+"par_status_"+std::to_string(Num)+" </TD><TD> "+Parti.part_status+"</TD> </TR> \n";
     Reporte = Reporte+"\n <TR>  <TD> "+"par_type_"+std::to_string(Num)+" </TD><TD> "+Parti.part_type+"</TD> </TR> \n";
-    Reporte = Reporte+"\n <TR>  <TD> "+"par_fit_"+std::to_string(Num)+" </TD><TD> "+Parti.part_fit+"</TD> </TR> \n";
+    Reporte = Reporte+"\n <TR>  <TD> "+"par_fit_"+std::to_string(Num)+" </TD><TD> "+Parti.part_fit[0]+Parti.part_fit[1]+"</TD> </TR> \n";
     Reporte = Reporte+"\n <TR>  <TD> "+"par_start_"+std::to_string(Num)+" </TD><TD> "+std::to_string(Parti.part_start)+"</TD> </TR> \n";
     Reporte = Reporte+"\n <TR>  <TD> "+"par_size_"+std::to_string(Num)+" </TD><TD> "+std::to_string(Parti.part_size)+"</TD> </TR> \n";
     Reporte = Reporte+"\n <TR>  <TD> "+"par_name_"+std::to_string(Num)+" </TD><TD> "+Parti.part_name+"</TD> </TR> \n";
     return Reporte;
 }
-void Reports::ReporteTablaMBR(const char *Path,const char *Guardar){
+void Reports::ReporteTablaMBR(const char *Path,const char *Guardar,int Num){
     FILE *f;
     MBR Main;
     f=fopen(Path,"r+");
@@ -30,18 +30,18 @@ void Reports::ReporteTablaMBR(const char *Path,const char *Guardar){
 
     std::string Reporte="";
     Reporte =Reporte+"digraph Gr { \n graph [ratio=fill]; \n graph [bb=\"0,0,352,154\"];"+ "node [label=\"\\N\", fontsize=15, shape=plaintext]; ";
-    Reporte =Reporte+"labelloc=\"t\"  \n label="+"MBR "+Path+";";
+    Reporte =Reporte+"labelloc=\"t\"  \n label="+"MBR_"+";";
     Reporte =Reporte+"Conte [label=< <TABLE BORDER=\"1\" ALIGN=\"center\" COLOR=\"#03fc20\">";
     Reporte = Reporte+"\n <TR>  <TD> Nombre </TD><TD> Valor </TD> </TR> \n";
     //Contenido MBR
     Reporte = Reporte+"\n <TR>  <TD> mbr_tamaño </TD><TD>"+ std::to_string(Main.mbr_tamano) +"</TD> </TR> \n";
-    Reporte = Reporte+"\n <TR>  <TD> mbr_fecha_creacion </TD><TD>" + std::to_string(Main.mbr_fecha_creacion.tm_hour) + "</TD> </TR> \n";
+    Reporte = Reporte+"\n <TR>  <TD> mbr_fecha_creacion </TD><TD>" + Fun->FechaString(&Main.mbr_fecha_creacion) + "</TD> </TR> \n";
     Reporte = Reporte+"\n <TR>  <TD> mbr_disk_signature </TD><TD> " + std::to_string(Main.mbr_disk_signature) + " </TD> </TR> \n";
-    Reporte = Reporte+"\n <TR>  <TD> Disk_fit </TD><TD> " + Main.disk_fit + "r </TD> </TR> \n";
+    Reporte = Reporte+"\n <TR>  <TD> Disk_fit </TD><TD> " + Main.disk_fit[0] +Main.disk_fit[1]+ " </TD> </TR> \n";
     for (int i=0;i<4;i++) {
         PAR Parti =Main.mbr_partition[i];
         if(Parti.part_status=='t'){
-            Reporte = Reporte+this->TablaPAR(Parti,i);
+            Reporte = Reporte+this->TablaPAR(Parti,i+1);
         }
     }
     Reporte = Reporte+"\n </TABLE> \n >]; \n}";
@@ -54,34 +54,36 @@ void Reports::ReporteTablaMBR(const char *Path,const char *Guardar){
         fwrite(&Cop,sizeof(Cop),1,f);
         fclose(f);
     }
-    const char *command = "dot -Tpng G.dot -o Tabla.png";
+    std::string CMD="dot -Tpng G.dot -o ";
+    CMD = CMD+Guardar;
+    const char *command = CMD.data();
     system(command);
 
 }
 
 
-std::string Reports::TablaEBR(EBR Extendida){
+std::string Reports::TablaEBR(EBR Extendida,int Num){
     std::string  Reporte="";
-    Reporte = Reporte+"\n <TR>  <TD> "+"par_status_"+std::to_string(0)+" </TD><TD> "+Extendida.part_status+"</TD> </TR> \n";
-    Reporte = Reporte+"\n <TR>  <TD> "+"par_fit_"+std::to_string(0)+" </TD><TD> "+Extendida.part_fit+"</TD> </TR> \n";
-    Reporte = Reporte+"\n <TR>  <TD> "+"par_start_"+std::to_string(0)+" </TD><TD> "+std::to_string(Extendida.part_start)+"</TD> </TR> \n";
-    Reporte = Reporte+"\n <TR>  <TD> "+"par_size_"+std::to_string(0)+" </TD><TD> "+std::to_string(Extendida.part_size)+"</TD> </TR> \n";
-    Reporte = Reporte+"\n <TR>  <TD> "+"par_name_"+std::to_string(0)+" </TD><TD> "+std::to_string(Extendida.part_next)+"</TD> </TR> \n";
-    Reporte = Reporte+"\n <TR>  <TD> "+"par_name_"+std::to_string(0)+" </TD><TD> "+Extendida.part_name+"</TD> </TR> \n";
+    Reporte = Reporte+"\n <TR>  <TD> "+"par_status_"+std::to_string(Num)+" </TD><TD> "+Extendida.part_status+"</TD> </TR> \n";
+    Reporte = Reporte+"\n <TR>  <TD> "+"par_fit_"+std::to_string(Num)+" </TD><TD> "+Extendida.part_fit+"</TD> </TR> \n";
+    Reporte = Reporte+"\n <TR>  <TD> "+"par_start_"+std::to_string(Num)+" </TD><TD> "+std::to_string(Extendida.part_start)+"</TD> </TR> \n";
+    Reporte = Reporte+"\n <TR>  <TD> "+"par_size_"+std::to_string(Num)+" </TD><TD> "+std::to_string(Extendida.part_size)+"</TD> </TR> \n";
+    Reporte = Reporte+"\n <TR>  <TD> "+"par_name_"+std::to_string(Num)+" </TD><TD> "+std::to_string(Extendida.part_next)+"</TD> </TR> \n";
+    Reporte = Reporte+"\n <TR>  <TD> "+"par_name_"+std::to_string(Num)+" </TD><TD> "+Extendida.part_name+"</TD> </TR> \n";
     return Reporte;
 }
-void Reports::ReporteTablaEBR(EBR Extendida, const char *Guardar){
+void Reports::ReporteTablaEBR(EBR Extendida, const char *Guardar,int Num){
     FILE *f;
 
 
     std::string Reporte="";
     Reporte =Reporte+"digraph Gr { \n graph [ratio=fill]; \n graph [bb=\"0,0,352,154\"];"+ "node [label=\"\\N\", fontsize=15, shape=plaintext]; ";
-    Reporte =Reporte+"labelloc=\"t\"  \n label="+"EBR "+Extendida.part_name+";";
+    Reporte =Reporte+"labelloc=\"t\"  \n label="+"EBR_"+Extendida.part_name+";";
     Reporte =Reporte+"Conte [label=< <TABLE BORDER=\"1\" ALIGN=\"center\" COLOR=\"#03fc20\">";
     Reporte = Reporte+"\n <TR>  <TD> Nombre </TD><TD> Valor </TD> </TR> \n";
     //Contenido MBR
 
-    Reporte = Reporte+this->TablaEBR(Extendida);
+    Reporte = Reporte+this->TablaEBR(Extendida,Num);
 
     Reporte = Reporte+"\n </TABLE> \n >]; \n}";
     char Cop[1+Reporte.size()];
@@ -93,7 +95,10 @@ void Reports::ReporteTablaEBR(EBR Extendida, const char *Guardar){
         fwrite(&Cop,sizeof(Cop),1,f);
         fclose(f);
     }
-    const char *command = "dot -Tpng G.dot -o Tabla.png";
+
+    std::string CMD="dot -Tpng G.dot -o ";
+    CMD = CMD+Guardar;
+    const char *command = CMD.data();
     system(command);
 
 
@@ -119,7 +124,30 @@ std::string Reports::GraphE(RDI Dita,const char *Path,std::queue <RDI> Que){
 }
 std::string Reports::GraphL(const char *Path, std::queue<RDI> Que){
         std::string Retu="";
+        if(Que.empty()){
+            FILE *f;
+            MBR Main;
+            f=fopen(Path,"r+");
+            if (!f){
+                return "<TD></TD>";
+            }
+            fread(&Main,sizeof(MBR),1,f);
+            fclose(f);
+            int Index=Fun->HasExtended(Path)-1;
+            PAR Ext=Main.mbr_partition[Index];
+            std::string Salida="<TD> Espacio Libre";
+            std::ostringstream Str;
+            Str << std::fixed;
+            Str << std::setprecision(2);
+            double Calc=double((int((Ext.part_size))))*100/double(Fun->FileSize(Path));
+            Str << Calc;
+            std::string Num = Str.str();
+            Salida = Salida+Num+"</TD>";
+            return Salida;
+
+        }
         while(!Que.empty()){
+
             RDI NewAva=Que.front();
             if(NewAva.Size>0){
                 switch (NewAva.Type) {
@@ -189,7 +217,7 @@ std::string Reports::GraphEmpty(RDI Dita,const char *Path){
     Retu=Retu+"</TABLE> </TD>";
     return Retu;
 }
-void Reports::Graphviz(const char *Path){
+void Reports::Graphviz(const char *Path,const char *Guardar){
     std::queue <RDI> Dita=this->PARTReport(Path);
     std::string M;
     M="\n labelloc=\"t\"";
@@ -226,7 +254,7 @@ void Reports::Graphviz(const char *Path){
             }
             }
 
-            std::cout<<NewAva.Begin<<"***"<<NewAva.Size<<"***"<<NewAva.Type<<"***"<<NewAva.Info<<std::endl;
+            //std::cout<<NewAva.Begin<<"***"<<NewAva.Size<<"***"<<NewAva.Type<<"***"<<NewAva.Info<<std::endl;
         }
         Dita.pop();
     }
@@ -241,8 +269,12 @@ void Reports::Graphviz(const char *Path){
         fwrite(&Cop,sizeof(Cop),1,f);
         fclose(f);
     }
-    const char *command = "dot -Tpng G.dot -o Dot.png";
+
+    std::string CMD="dot -Tpng G.dot -o ";
+    CMD = CMD+Guardar;
+    const char *command = CMD.data();
     system(command);
+
    // std::cout<<Graph<<std::endl;
 }
 //Llena Cola De Primarias Y Extendidas
@@ -327,111 +359,64 @@ void Reports::FillQueue(std::queue<RDI> *Q1, std::queue<RDI> Q2){
 }
 //Llena Cola De Logicas
 std::queue <RDI> Reports::LogicReport(const char *Path, int Begin, int End){
+    std::queue <RDI> Dita;
     FILE *f;
-    std::string Out="";
-    EBR Logic;
+    EBR Cur;
     //Logic.part_next=0;
     int LogicIndex=Begin;
-    std::queue <RDI> Dita;
     f=fopen(Path,"r+");
     if (!f){
         return Dita;
     }
 
-    fseek(f,LogicIndex,SEEK_SET);
-    fread(&Logic,sizeof(EBR),1,f);
-    EBR First;
-    fseek(f,Begin,SEEK_SET);
-    fread(&First,sizeof(EBR),1,f);
-    EBR Next;
-    while(LogicIndex!=-1){
-        fseek(f,LogicIndex,SEEK_SET);
-        fread(&Logic,sizeof(EBR),1,f);
-        LogicIndex=Logic.part_next;
-        {
-            RDI NewAva;
-            NewAva.Begin=Logic.part_start;
-            NewAva.End=Logic.part_start+Logic.part_size;
-            NewAva.Size=Logic.part_size;
-            NewAva.Type=3;
-            NewAva.Info=Logic.part_name;
-            Dita.push(NewAva);
-        }
+        //Cola para los fit
+        //std::queue <EBR> Dita;
 
-
-        if(LogicIndex!=-1){
+RDI Nueva;
+        while(LogicIndex!=-1){
             fseek(f,LogicIndex,SEEK_SET);
-            fread(&Next,sizeof(EBR),1,f);
+            fread(&Cur,sizeof(EBR),1,f);
+            LogicIndex=Cur.part_next;
 
-            RDI NewAva;
-            NewAva.Begin=Logic.part_start+Logic.part_size;
-            NewAva.End=Next.part_start;
-            NewAva.Size=NewAva.End-NewAva.Begin;
-            NewAva.Type=4;
-            NewAva.Info="";
-            Dita.push(NewAva);
+            Nueva.Begin=Begin;
+            Nueva.End=Cur.part_start;
+            Nueva.Size=Nueva.End-Nueva.Begin;
+            Nueva.Info="Espacio Disponible";
+            Nueva.Type=4;
+            if(Nueva.Size>0){
+            Dita.push(Nueva);
+            }
 
-            Begin=Next.part_start+Next.part_size;
 
-        }else if (Logic.part_start==Begin && strcmp(Logic.part_name, First.part_name)==0 ) {
-            RDI NewAva;
-            NewAva.Begin=Logic.part_start+Logic.part_size;
-            NewAva.End=End;
-            NewAva.Size=NewAva.End-NewAva.Begin;
-            NewAva.Type=4;
-            NewAva.Info="";
-            Dita.push(NewAva);
-            Begin=End;
+            if(Cur.part_status=='t'){
 
-        }
+
+
+
+
+               Nueva.Begin=Cur.part_start;
+               Nueva.End=Cur.part_start+Cur.part_size;
+               Nueva.Size=Nueva.End-Nueva.Begin;
+               Nueva.Info=Cur.part_name;
+               Nueva.Type=3;
+               Dita.push(Nueva);
+
+
+
+               Begin=Cur.part_start+Cur.part_size;
+            }
     }
+        Nueva.Begin=Begin;
+        Nueva.End=End;
+        Nueva.Size=Nueva.End-Nueva.Begin;
+        Nueva.Info="Espacio Disponible";
+        Nueva.Type=4;
+        if(Nueva.Size>0){
+        Dita.push(Nueva);
+        }
 
-    fclose(f);
-    RDI NewAva;
-    NewAva.Begin=Begin;
-    NewAva.End=End;
-    NewAva.Size=NewAva.End-NewAva.Begin;
-    NewAva.Type=4;
-    NewAva.Info="";
-    Dita.push(NewAva);
-    //Cola para los fit
 
+        fclose(f);
         return Dita;
+
 }
-/*
-digraph Gr {
-    graph [ratio=fill];
-    graph [bb="0,0,352,154"];
-    node [label="\N", fontsize=15, shape=plaintext];
-
-    Conte [label=<
-        <TABLE ALIGN="center" COLOR="#0CB7F2">
-            <TR>
-                <TD>Top left</TD>
-                <TD>
-
-                    <TABLE BORDER="0" >
-                        <TR  ><TD   >Rowqqqqqqqqqqqqqqqqqq 1</TD></TR>
-                        <TR ><TD >
-
-                        <TABLE BORDER="0" >
-                                <TR >
-                                <TD BORDER="1">Row 1</TD>
-                                <TD BORDER="1">Row 1</TD>
-                                <TD BORDER="1">Row 1</TD>
-                                <TD BORDER="1">Row 1</TD>
-                                </TR>
-                        </TABLE>
-
-
-                        </TD></TR>
-                    </TABLE>
-                </TD>
-                <TD>Top left</TD>
-                <TD>Top left</TD>
-            </TR>
-
-        </TABLE>
-    >, ];
-}
-*/

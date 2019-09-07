@@ -9,6 +9,9 @@ class Functions
 {
 public:
     Functions();
+    int GenerarNumeroRandom();
+    void Fecha(struct tm *Dita);
+    std::string FechaString(struct tm *Dita);
     int LogicaFinal(PAR Extendida,const char *Path);
     int Mult(int Num,char C);
     int LogicFit( char Fit[2],int Size,const char *Path,int Begin,int End);
@@ -25,6 +28,9 @@ public:
     int SearchPAR(const char *Name,const char *Path);
     bool ExisteArchivo(const char *Path);
 private:
+    bool Valido(int Num);
+    void EscribirRandom(int Num);
+
     int LogicalFirstFit(int Size,const char *Path,int Begin,int End);
     int LogicalWorstFit(int Size,const char *Path,int Begin,int End);
     int LogicalBestFit(int Size,const char *Path,int Begin,int End);

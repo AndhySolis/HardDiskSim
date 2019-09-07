@@ -43,11 +43,18 @@ typedef struct MasterBootRecord{
 }MBR ;
 
 typedef struct Montado{
-    PAR *Particion;
-    EBR *Logica;
+    PAR Particion;
+    EBR Logica;
     int Numero;
+    bool EsLogica;
 }MOU;
 
+
+typedef struct Aleatorios{
+    int Num;
+    bool Siguiente;
+    int Pos;
+}ALE;
 
 class STRUCTS
 {

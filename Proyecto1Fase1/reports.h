@@ -8,14 +8,14 @@
 class Reports
 {
 public:
-    void ReporteTablaMBR(const char *Path,const char *Guardar);
-    void ReporteTablaEBR(EBR Extendida,const char *Guardar);
-    void Graphviz(const char *Path);
+    void ReporteTablaMBR(const char *Path,const char *Guardar,int Num);
+    void ReporteTablaEBR(EBR Extendida,const char *Guardar,int Num);
+    void Graphviz(const char *Path,const char *Guardar);
     Reports();
 private:
     //TABLA
     std::string TablaPAR(PAR Parti,int Num);
-    std::string TablaEBR(EBR Extendida);
+    std::string TablaEBR(EBR Extendida,int Num);
     //GRAFICO
     std::queue <RDI> LogicReport(const char *Path, int Begin, int End);
     std::queue <RDI> PARTReport(const char *Path);
