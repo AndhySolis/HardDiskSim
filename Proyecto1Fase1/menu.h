@@ -6,6 +6,7 @@
 #include "functions.h"
 #include "structs.h"
 #include "reports.h"
+#include "operacionusuario.h"
 #include "disco.h"
 //Para el mount
 
@@ -15,6 +16,28 @@
 class Menu
 {
 public:
+    //MKUSR
+    void MKUSR(const char *USR,const char *Pwd,const char *Grp);
+    //RMUSRT
+    void RMUSR(const char *USR);
+    //MKGRP
+    void RMGRP(const char *Nombre);
+    //MKGRP
+    void MKGRP(const char *Nombre);
+    //REM
+    void REM(const char *Path);
+    //LOGOUT
+    void Logout();
+    //LOGIN
+    void LOGIN(const char *Usr,const char *Pwd,const char *Id);
+    //EDIT
+    void EDIT(const char *Path,const char *Contenido);
+    //CAT
+    std::string CAT(const char *Path);
+    //MKFILE
+    void MKFILE(const char *Path, char Padre,const char *Contenido);
+    //MKDIR
+    void MKDIR(const char *Path, char Padre);
     //MKFS
     void MKFS(const char *Id,const char *Type,int EXT);
     //REP
@@ -42,6 +65,7 @@ private:
     void ReducirPrimaria(int Size,const char *Path,int Indice);
     void AgregarMas(int Size,const char *Path,const char *Name);
     void AgregarMenos(int Size,const char *Path,const char *Name);
+    OperacionUsuario *OpeU= new OperacionUsuario();
     Functions *Fun=  new Functions();
     Reports *Repo=  new Reports();
     Disco *PrimerDisco = nullptr;

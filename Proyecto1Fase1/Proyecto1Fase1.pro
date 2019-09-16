@@ -20,6 +20,7 @@ SOURCES += \
     functions.cpp \
         main.cpp \
     menu.cpp \
+    operacionusuario.cpp \
     parser.cpp \
     reports.cpp \
     scanner.cpp \
@@ -35,6 +36,7 @@ HEADERS += \
     ext.h \
     functions.h \
     menu.h \
+    operacionusuario.h \
     parser.h \
     reports.h \
     scanner.h \

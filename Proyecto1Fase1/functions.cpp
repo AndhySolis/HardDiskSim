@@ -218,7 +218,7 @@ EBR Functions::SearchEBR(const char *Name,const char *Path ){
     int Index =this->HasExtended(Path);
     if(Index==0 || Index==-1)
     {
-        this->Out("Este Disco No Tiene Particion extendida");
+        //this->Out("Este Disco No Tiene Particion extendida");
         return Findi;
     }
     PAR Extend=Main.mbr_partition[Index-1];
@@ -280,6 +280,22 @@ bool Functions::IF(const char *a, const char *b){
         }
         for (std::string::const_iterator c1 = A.begin(), c2 = B.begin(); c1 != A.end(); ++c1, ++c2) {
             if (tolower(*c1) != tolower(*c2)) {
+                return false;
+            }
+        }
+        return true;
+
+}
+/*!
+    \class QCache
+    \brief Devuelve true si es verdadero
+*/
+bool Functions::IFEspecial(std::string A , std::string B ){
+    if (A.size() != B.size()) {
+            return false;
+        }
+        for (std::string::const_iterator c1 = A.begin(), c2 = B.begin(); c1 != A.end(); ++c1, ++c2) {
+            if ((*c1) != (*c2)) {
                 return false;
             }
         }

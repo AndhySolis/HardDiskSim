@@ -22,6 +22,7 @@ public:
     bool LogicLimit(int EBRLimit,int Ini,int Size,const char *Path);
     int HasExtended(const char *Path);
     void Out(const char *Path);
+    bool IFEspecial(std::string A , std::string B );
     bool IF(std::string A , std::string B );
     bool IF( const char* a, const char* b);
     EBR SearchEBR(const char *Name,const char *Path);

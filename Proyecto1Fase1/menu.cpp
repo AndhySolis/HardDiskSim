@@ -2,14 +2,162 @@
 #include <iostream>
 
 #include <fstream>
-/*
- * Falta El Raid
- *+++++MKDISK++++++++++++++++++++++++++++
-    Terminar El Identificador Random Y Unico
- *+++++RMDISK++++++++++++++++++++++++++++
-    Falta Implementar Eliminación Del Raid
-*+++++FDISK++++++++++++++++++++++++++++
-*/
+//MKUSR
+void Menu::MKUSR(const char *USR, const char *Pwd, const char *Grp){
+    if(OpeU->HayUsuarioEnElSistema()){
+        bool Root=OpeU->UsuarioActualEsRoot();
+        if(Root){
+            std::string Adicion=OpeU->CrearUsuario(USR,Pwd,Grp);
+            EDIT("/users.txt",Adicion.data());
+        }else{
+            std::cout<<"Se Necesitan Permisos 'Root' Para Crear Usuarios"<<std::endl;
+        }
+    }
+}
+//RMUSR
+void Menu::RMUSR(const char *USR){
+    if(OpeU->HayUsuarioEnElSistema()){
+        bool Root=OpeU->UsuarioActualEsRoot();
+        if(Root){
+            std::string Actualizar=OpeU->RemoverUsuario(USR);
+            REM("/users.txt");
+            MKFILE("/users.txt",'0',Actualizar.data());
+        }else{
+            std::cout<<"Se Necesitan Permisos 'Root' Para Eliminar Usuarios"<<std::endl;
+        }
+    }
+}
+//RMGRP
+void Menu::RMGRP(const char *Nombre){
+    if(OpeU->HayUsuarioEnElSistema()){
+        bool Root=OpeU->UsuarioActualEsRoot();
+        if(Root){
+            std::string Actualizar=OpeU->RemoverGrupo(Nombre);
+            REM("/users.txt");
+            MKFILE("/users.txt",'0',Actualizar.data());
+        }else{
+            std::cout<<"Se Necesitan Permisos 'Root' Para Eliminar Grupos"<<std::endl;
+        }
+    }
+}
+//MKGRP
+void Menu::MKGRP(const char *Nombre){
+    if(OpeU->HayUsuarioEnElSistema()){
+        bool Root=OpeU->UsuarioActualEsRoot();
+        if(Root){
+            std::string Adicion=OpeU->CrearGrupo(Nombre);
+            EDIT("/users.txt",Adicion.data());
+        }else{
+            std::cout<<"Se Necesitan Permisos 'Root' Para Crear Grupos"<<std::endl;
+        }
+    }
+}
+
+//REM
+void Menu::REM(const char *Path){
+    Disco *Ptr=this->PrimerDisco;
+    if(Ptr==nullptr){
+        std::cout<<"No Hay Ninguna Particion Montada En El Sistema"<<std::endl;
+    }else {
+        if(OpeU->HayUsuarioEnElSistema()){
+            this->PrimerDisco->BorrarArchivoParticion(OpeU->IDMontado.data(),Path);
+        }else{
+            std::cout<<"No Hay Usuarios En El Sistema"<<std::endl;
+        }
+    }
+}
+//LOGOUT
+void Menu::Logout(){
+    if(OpeU->UsuarioActual==nullptr){
+        std::cout<<"Error No Hay Usuario Logueado"<<std::endl;
+    }else{
+        std::cout<<"El Usuario '"<<OpeU->UsuarioActual->Usuario<<"' Ha Salido Del Sistema"<<std::endl;
+        OpeU->Limpiar();
+    }
+}
+//LOGIN
+void Menu::LOGIN(const char *Usr, const char *Pwd, const char *Id){
+    if(OpeU->HayUsuarioEnElSistema()){
+        std::cout<<"Ya Hay Usuario En El Sistema"<<std::endl;
+        return;
+    }
+
+
+    OpeU->CargarDatos(CAT("/users.txt"));
+    bool Valido=OpeU->Login(Usr,Pwd);
+    if(Valido){
+        Disco *Ptr=this->PrimerDisco;
+        if(Ptr==nullptr){
+            std::cout<<"No Hay Ninguna Particion Montada En El Sistema"<<std::endl;
+        }else {
+            if(this->PrimerDisco->ExisteParticionMontada(Id)){
+                OpeU->IDMontado=Id;
+                std::cout<<"Credenciales Validas, Ingresando Como El Usuario: "<<Usr<<std::endl;
+                std::cout<<"Usando La Particion Montada: "<<Id<<std::endl;
+            }else{
+                std::cout<<"La Particion Solicitada No Existe, Cancelando Login"<<std::endl;
+                OpeU->Limpiar();
+            }
+        }
+    }else{
+        std::cout<<"Credenciales Incorrectas, Contrasenia o Usuario Erroneo"<<Id<<std::endl;
+    }
+}
+//EDIT
+void Menu::EDIT(const char *Path, const char *Contenido){
+    Disco *Ptr=this->PrimerDisco;
+    if(Ptr==nullptr){
+        std::cout<<"No Hay Ninguna Particion Montada En El Sistema"<<std::endl;
+    }else {
+        if(OpeU->HayUsuarioEnElSistema()){
+            this->PrimerDisco->ExpandirArchivoParticion(OpeU->IDMontado.data(),Path,Contenido);
+        }else{
+            std::cout<<"No Hay Usuarios En El Sistema"<<std::endl;
+        }
+    }
+}
+//CAT
+std::string Menu::CAT(const char *Path){
+    Disco *Ptr=this->PrimerDisco;
+    std::string Lectura="";
+    if(Ptr==nullptr){
+        std::cout<<"No Hay Ninguna Particion Montada En El Sistema"<<std::endl;
+    }else {
+        if(OpeU->HayUsuarioEnElSistema()){
+            Lectura= this->PrimerDisco->LeerArchivoParticion(OpeU->IDMontado.data(),Path);
+        }else{
+            std::cout<<"No Hay Usuarios En El Sistema"<<std::endl;
+        }
+    }
+    return Lectura;
+}
+//MKDIR
+void Menu::MKFILE(const char *Path, char Padre,const char *Contenido){
+    Disco *Ptr=this->PrimerDisco;
+    if(Ptr==nullptr){
+        std::cout<<"No Hay Ninguna Particion Montada En El Sistema"<<std::endl;
+    }else {
+        if(OpeU->HayUsuarioEnElSistema()){
+            this->PrimerDisco->CrearArchivoParticion(OpeU->IDMontado.data(),Path,Padre,Contenido);
+        }else{
+            std::cout<<"No Hay Usuarios En El Sistema"<<std::endl;
+        }
+
+    }
+}
+//MKDIR
+void Menu::MKDIR(const char *Path, char Padre){
+    Disco *Ptr=this->PrimerDisco;
+    if(Ptr==nullptr){
+        std::cout<<"No Hay Ninguna Particion Montada En El Sistema"<<std::endl;
+    }else {
+        if(OpeU->HayUsuarioEnElSistema()){
+           this->PrimerDisco->CrearCarpetaParticion(OpeU->IDMontado.data(),Path,Padre);
+        }else{
+            std::cout<<"No Hay Usuarios En El Sistema"<<std::endl;
+        }
+    }
+}
 //MKFS
 void Menu::MKFS(const char *Id, const char *Type, int EXT){
     std::cout<<"Falta Limpiar Particion Antes"<<std::endl;
@@ -509,10 +657,10 @@ void Menu::NewPrimary(int Size, const char *Fit, char Unit, const char *Path,con
         SubFit[0]=Fit[0];
         SubFit[1]=Fit[1];
         int Fit = Fun->DiskFit(SubFit,Size,Path);
-        std::cout<<"Se Creo Particion Primaria: "<<Name<< " De Tamanio:"<<Original<<Unit<<" A Partir Del Byte:"<<Fit<<" En El Disco:"<<Path<<std::endl;
-        if(Fit==-1){
+           if(Fit==-1){
             Fun->Out("No Hay Espacio Suficiente Para La Particion");
         }else{
+            std::cout<<"Se Creo Particion Primaria: "<<Name<< " De Tamanio:"<<Original<<Unit<<" A Partir Del Byte:"<<Fit<<" En El Disco:"<<Path<<std::endl;
             r.mbr_partition[Index-1].part_status='t';
             r.mbr_partition[Index-1].part_type='p';
             r.mbr_partition[Index-1].part_fit[0]=SubFit[0];
@@ -752,36 +900,27 @@ void Menu::NewMenu(){
 
     if(true){
     Fun->Out("-----------------NewMenu--------------");
-    Mkdisk(100,"ff",'M',"Disco.disk");
-    FDisk(50,"ff",'q',"Disco.disk",'p',"a");
-    this->FDISKAdd(100,"Disco.disk","a");
-    FDisk(100,"ff",'q',"Disco.disk",'p',"b");
-
-
-    FDisk(100,"ff",'q',"Disco.disk",'p',"c");
-    //FDISKDelete("fast","Disco.disk","a");//ELIMINANDO PARTICIONES PRIMARIAS|EXTENDIDA
-    //FDISKDelete("fast","Disco.disk","b");//ELIMINANDO PARTICIONES PRIMARIAS|EXTENDIDA
-    FDisk(300,"ff",'q',"Disco.disk",'e',"d");
-    //FDISKDelete("fast","Disco.disk","d");//ELIMINANDO PARTICIONES PRIMARIAS|EXTENDIDA
-
-
-
-    FDisk(50,"ff",'q',"Disco.disk",'l',"e");
-    FDisk(50,"ff",'q',"Disco.disk",'l',"f");
-    FDisk(50,"ff",'q',"Disco.disk",'l',"g");
-    FDisk(50,"ff",'q',"Disco.disk",'l',"h");
-    FDisk(50,"ff",'q',"Disco.disk",'l',"i");
-    FDisk(50,"ff",'q',"Disco.disk",'l',"j");
-    MOUNT("Disco.disk","a");
-    //this->REP("vda1","mbr","I:\\build-Proyecto1Fase1-Desktop_Qt_5_13_0_MinGW_32_bit-Debug\\Bum.png");
+    Mkdisk(2,"ff",'M',"I:\\Disco.disk");
+    FDisk(1,"ff",'M',"I:\\Disco.disk",'p',"a");
+    MOUNT("I:\\Disco.disk","a");
     MKFS("vda1","full",1);
+    MKDIR("/Carpeta/Ubuntu/Wayland/Limite/K/M",'1');
+    MKDIR("/Carpeta3/Ubuntu/Wayland/Limite/K/M/Nueva",'1');
+    MKFILE("/Carpeta3/Ubuntu/Wayland/Limite/K/M/Nueva/Hola.txt",'0',"y El vídeo proporciona una manera eficaz para ayudarle a demostrar el punto.Cuando haga clic en Vídeo en línea, puede pegar el código para ");
+    MKFILE("/Dita.txt",'0',"El vídeo proporciona una manera eficaz para ayudarle a demostrar el punto.Cuando haga clic en Vídeo en línea, puede pegar el código para insertar del vídeo que desea agregar. ");
+    EDIT("/Dita.txt","ContenidoMASContenidoMAS");
 
-    //FDISKDelete("fast","Disco.disk","e");//ELIMINANDO PARTICIONES LOGICAS}
-    //FDISKDelete("fast","Disco.disk","f");//ELIMINANDO PARTICIONES LOGICAS}
-    //FDISKDelete("fast","Disco.disk","h");//ELIMINANDO PARTICIONES LOGICAS}
-    //Fun->Out("-----------------Graficar--------------");
-    //RMDISK("Disco.disk");
-    //Repo->Graphviz("Disco.disk","I:\\Tnt.png");
+    REM("/users.txt");
+    std::cout<<"HOLA"<<std::endl;
+
+
+
+
+
+    REP("vda1","bm_inode","I:\\bm_inodo.txt");
+    REP("vda1","bm_block","I:\\bm_bloque.txt");
+    REP("vda1","tree","I:\\Arbol.png");
+    //UNMOUNT("vda1");
     //RMDISK("Disco.disk");
     }
 }
@@ -810,7 +949,7 @@ void Menu::Mkdisk(int Size, const char *Fit, char Unit, const char *Path){
         r.disk_fit[1]=char(tolower(Fit[1]));
         fwrite(&r,sizeof(MBR),1,f);
         fclose(f);
-        FillDisk(sizeof(MBR),Size,'\0',Path);
+        FillDisk(sizeof(MBR),Size-int(sizeof(MBR)),'\0',Path);
     }
     if(Fun->ExisteArchivo(Path)){
         std::cout<<"Se Creo Creo Disco Duro Tamanio:"<<Origi<<Unit<<" En:"<<Path<<std::endl;
@@ -832,7 +971,7 @@ void Menu::FillPAR(PAR *NPAR){
     \brief Llena El Disco Con Cierto Caracter(r+ Es para Actualizar W es para borrar y escribir).
 */
 void Menu::FillDisk(int Begin, int Size, char Character,const char *Path){
-    FILE *f;
+    /*FILE *f;
     f=fopen(Path,"r+");
     int Kilo=Size/1024;
     if(Kilo>0){
@@ -850,6 +989,30 @@ void Menu::FillDisk(int Begin, int Size, char Character,const char *Path){
     Begin=Begin+(Kilo*1024);
     fseek(f,Begin,SEEK_SET);
     for(int i=Begin;i<Size;i++){
+        fwrite(&Character,sizeof (Character),1,f);
+    }
+    fclose(f);*/
+    FILE *f;
+    f=fopen(Path,"r+");
+    int Kilo=Size/1024;
+    if(Kilo>0){
+        char Buffi[1024];
+        for (int i=0;i<1024;i++) {
+            Buffi[i]=Character;
+        }
+
+        fseek(f,Begin,SEEK_SET);
+        for(int i=0;i<Kilo;i++){
+
+            fwrite(&Buffi,sizeof (Buffi),1,f);
+        }
+
+    }
+    Size=Size-Kilo*1024;
+    Begin=Begin+(Kilo*1024);
+    fseek(f,Begin,SEEK_SET);
+    for(int i=0;i<Size;i++){
+
         fwrite(&Character,sizeof (Character),1,f);
     }
     fclose(f);

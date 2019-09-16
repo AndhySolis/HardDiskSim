@@ -5,6 +5,22 @@
 #include<QDebug>
 #include <iostream>
 #include <stdio.h>
+
+
+typedef struct  Grupo{
+    int Gid;
+    std::string Tipo;
+    std::string Grupo;
+}GRU;
+
+typedef struct  Usuario{
+    int Uid;
+    std::string Tipo;
+    GRU *Grupo;
+    std::string Usuario;
+    std::string Contrasenia;
+}USU;
+
 typedef struct  Avaliable{
     int Begin;
     int End;

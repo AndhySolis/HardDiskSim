@@ -1,12 +1,259 @@
 #include "reports.h"
+#include "structsext.h"
 //PARTREPORT ES SIMILAR A LOS FIT
 //No guarda en la ubicacion variable
 Reports::Reports()
 {
 
 }
+std::string Reports::GraficarInodos(int Comienzo, const char *PathReal){
 
 
+    FILE *f;
+    f=fopen(PathReal,"r+");
+    INO Inodo;
+    fseek(f,Comienzo,SEEK_SET);
+    fread(&Inodo,sizeof(Inodo),1,f);
+    fclose(f);
+    std::string Concatenar="";
+
+    Concatenar=Concatenar+"I"+std::to_string(Comienzo)+" [ label=< <TABLE BGCOLOR=\"white\">";
+    Concatenar=Concatenar+"<TR><TD COLSPAN=\"2\" BGCOLOR=\"darkturquoise\" > Inodo_"+std::to_string(Comienzo)+"</TD></TR>\n";
+    Concatenar=Concatenar+NuevaFila("darkslategray1","deepskyblue4","i_uid",std::to_string(Inodo.i_uid))+"\n";
+    Concatenar=Concatenar+NuevaFila("darkslategray1","deepskyblue4","i_gid",std::to_string(Inodo.i_gid))+"\n";
+    Concatenar=Concatenar+NuevaFila("darkslategray1","deepskyblue4","i_size",std::to_string(Inodo.i_size))+"\n";
+    Concatenar=Concatenar+NuevaFila("darkslategray1","deepskyblue4","i_atime",Fun->FechaString(&Inodo.i_atime))+"\n";
+    Concatenar=Concatenar+NuevaFila("darkslategray1","deepskyblue4","i_ctime",Fun->FechaString(&Inodo.i_ctime))+"\n";
+    Concatenar=Concatenar+NuevaFila("darkslategray1","deepskyblue4","i_mtime",Fun->FechaString(&Inodo.i_mtime))+"\n";
+    for(int i=0;i<15;i++){
+        Concatenar=Concatenar+"<TR>"+"<TD  BGCOLOR=\""+"darkslategray1"+"\">"+"i_block"+std::to_string(i)+"</TD><TD PORT=\"P"+std::to_string(i)+"\" BGCOLOR=\""+"deepskyblue4"+"\">"+std::to_string(Inodo.i_block[i])+"</TD>  </TR> \n";
+     }
+    std::string Type="";
+    Type+=Inodo.i_type;
+    Concatenar=Concatenar+NuevaFila("darkslategray1","deepskyblue4","i_type",Type)+"\n";
+    Concatenar=Concatenar+NuevaFila("darkslategray1","deepskyblue4","i_perm",std::to_string(Inodo.i_perm))+"\n";
+
+
+
+
+
+    Concatenar=Concatenar+"</TABLE>>] \n";
+
+    for(int i=0;i<15;i++){
+        if(Inodo.i_block[i]!=-1)
+        Concatenar=Concatenar+"I"+std::to_string(Comienzo)+":P"+std::to_string(i)+"->B"+std::to_string(Inodo.i_block[i])+" [dir=both arrowtail = diamond] \n";
+    }
+
+
+
+
+
+
+    int Tipo;
+    if(Inodo.i_type=='1')
+        Tipo=1;
+    else
+        Tipo=0;
+    for(int i=0;i<12;i++){
+        int Comprobar=Inodo.i_block[i];
+
+        if(Comprobar!=-1){
+
+            Concatenar =Concatenar+GraficarIndirectos(0,0,Comprobar,PathReal,Tipo);
+        }
+
+    }
+    for(int i=0;i<3;i++){
+        int Comprobar=Inodo.i_block[12+i];
+        if(Comprobar!=-1){
+            Concatenar=Concatenar+GraficarIndirectos(1+i,0,Comprobar,PathReal,Tipo);
+
+        }
+    }
+
+    return Concatenar;
+}
+std::string Reports::GraficarDirectos(int Comienzo,const char *PathReal,int Tipo){
+    FILE *f;
+    f=fopen(PathReal,"r+");
+    BCA Carpeta;
+    fseek(f,Comienzo,SEEK_SET);
+    fread(&Carpeta,sizeof(Carpeta),1,f);
+    fclose(f);
+    std::string Concatenar="";
+    Concatenar=Concatenar+"B"+std::to_string(Comienzo)+" [ label=< <TABLE BGCOLOR=\"white\">";
+    Concatenar=Concatenar+"<TR><TD COLSPAN=\"2\" BGCOLOR=\"chartreuse4\" > Bloque_"+std::to_string(Comienzo)+"</TD></TR>\n";
+    std::string Punteros="";
+    for(int i=0;i<4;i++){
+        CON Conte=Carpeta.content[i];
+        std::string Prueba=Conte.b_name;
+        Prueba=Prueba.substr(0,12);
+        Concatenar=Concatenar+NuevaFila("darkseagreen3","darkolivegreen1","b_name",Prueba)+"\n";
+        Concatenar=Concatenar+"<TR>"+"<TD  BGCOLOR=\""+"darkseagreen3"+"\">"+"b_inodo"+std::to_string(i)+"</TD><TD PORT=\"P"+std::to_string(i)+"\" BGCOLOR=\""+"darkolivegreen1"+"\">"+std::to_string(Conte.b_inodo)+"</TD>  </TR> \n";
+        if(Conte.b_inodo!=-1){
+            if(Tipo==0)
+                Punteros=Punteros+"B"+std::to_string(Comienzo)+":P"+std::to_string(i)+"->I"+std::to_string(Conte.b_inodo)+" [dir=both arrowtail = diamond] \n";
+            else
+                Punteros=Punteros+"B"+std::to_string(Comienzo)+":P"+std::to_string(i)+"->B"+std::to_string(Conte.b_inodo)+" [dir=both arrowtail = diamond] \n";
+        }
+    }
+    Concatenar=Concatenar+"</TABLE>>] \n";
+    Concatenar=Concatenar+Punteros;
+    for(int i=0;i<4;i++){
+        CON Contenido=Carpeta.content[i];
+        if(Contenido.b_inodo!=-1){
+            if(Tipo==0){
+                Concatenar=Concatenar+GraficarInodos(Contenido.b_inodo,PathReal);
+            }else{
+                Concatenar=Concatenar+GraficarBloqueContenido(Contenido.b_inodo,PathReal);
+            }
+        }
+    }
+    return Concatenar;
+}
+std::string Reports::GraficarBloqueContenido(int Comienzo, const char *PathReal){
+    FILE *f;
+    f=fopen(PathReal,"r+");
+    BAR Dato;
+    fseek(f,Comienzo,SEEK_SET);
+    fread(&Dato,sizeof(Dato),1,f);
+    fclose(f);
+    std::string Concatenar="";
+    Concatenar=Concatenar+"B"+std::to_string(Comienzo)+" [ label=< <TABLE BGCOLOR=\"white\">";
+    Concatenar=Concatenar+"<TR><TD COLSPAN=\"2\" BGCOLOR=\"deeppink3\" > Bloque_"+std::to_string(Comienzo)+"</TD></TR>\n";
+
+
+        std::string Prueba=Dato.b_content;
+        Prueba=Prueba.substr(0,64);
+        Concatenar=Concatenar+NuevaFila("deeppink","floralwhite","Contenido",Prueba)+"\n";
+    Concatenar=Concatenar+"</TABLE>>] \n";
+
+
+    return Concatenar;
+}
+std::string Reports::GraficarIndirectos(int Nivel, int NivelActual, int Comienzo,  const char *PathReal,int Tipo){
+    if(Nivel==NivelActual){
+        return GraficarDirectos(Comienzo,PathReal,Tipo);
+    }
+    FILE *f;
+    f=fopen(PathReal,"r+");
+    BAP Apunta;
+    fseek(f,Comienzo,SEEK_SET);
+    fread(&Apunta,sizeof(Apunta),1,f);
+    fclose(f);
+    std::string Concatenar="";
+    for(int i=0;i<16;i++){
+        int Valor=Apunta.b_pointers[i];
+        if(Valor!=-1){
+            Concatenar=Concatenar+GraficarIndirectos(Nivel,NivelActual,Valor,PathReal,Tipo);
+        }
+    }
+    return Concatenar;
+}
+
+
+void Reports::ReporteArbol(int Inicio, const char *Disco, const char *Path){
+    FILE *f;
+    f=fopen(Disco,"r+");
+    SPB Leer;
+    //Leer Super Bloque De La Particion
+    fseek(f,Inicio,SEEK_SET);
+    fread(&Leer,sizeof(Leer),1,f);
+    fclose(f);
+    int ComienzoInodo=Leer.s_first_ino;
+    std::string Graphviz="";
+    Graphviz=Graphviz+"digraph G { \n rankdir=LR node \n [shape=plaintext] \n";
+    Graphviz=Graphviz+ GraficarInodos(ComienzoInodo,Disco)+"\n";
+    Graphviz=Graphviz+"} \n";
+    f=fopen("Arbol.dot","w");
+    //Leer Super Bloque De La Particion
+    fwrite(Graphviz.data(),Graphviz.length(),1,f);
+    fclose(f);
+
+    std::string CMD="dot -Tpng Arbol.dot -o ";
+    CMD = CMD+Path;
+    const char *command = CMD.data();
+    system(command);
+}
+
+std::string Reports::NuevaFila(std::string Color1, std::string Color2, std::string Contenido1, std::string Contenido2){
+    std::string Salida="";
+    Salida=Salida+"<TR>"+"<TD BGCOLOR=\""+Color1+"\">"+Contenido1+"</TD><TD BGCOLOR=\""+Color2+"\">"+Contenido2+"</TD>  </TR>";
+    return Salida;
+}
+void Reports::Reportebm_Inodo(int Inicio, const char *Disco, const char *Path){
+    FILE *f;
+    f=fopen(Disco,"r+");
+    SPB Leer;
+    //Leer Super Bloque De La Particion
+    fseek(f,Inicio,SEEK_SET);
+    fread(&Leer,sizeof(Leer),1,f);
+    //Tamaño Y Ubicacion
+    int Ubi=Leer.s_bm_inode_start;
+    int Tamanio=Leer.s_inodes_count;
+    //Ubicarse En el BM
+    fseek(f,Ubi,SEEK_SET);
+    char Lectura;
+    std::string Salida="";
+    int Contador=1;
+    for(int i=0;i<Tamanio;i++){
+        Contador++;
+        fread(&Lectura,sizeof(Lectura),1,f);
+        Salida=Salida+Lectura;
+        if(Contador>20){
+            Salida=Salida+'\n';
+            Contador=1;
+        }
+    }
+    fclose(f);
+    char Cop[1+Salida.length()];
+    strcpy(Cop,Salida.c_str());
+    f=fopen(Path,"w");
+    if (!f){
+        return ;
+    }else{
+        fwrite(&Cop,sizeof(Cop),1,f);
+        fclose(f);
+    }
+
+}
+void Reports::Reportebm_Bloque(int Inicio, const char *Disco, const char *Path){
+
+    FILE *f;
+    f=fopen(Disco,"r+");
+    SPB Leer;
+    //Leer Super Bloque De La Particion
+    fseek(f,Inicio,SEEK_SET);
+    fread(&Leer,sizeof(Leer),1,f);
+    //Tamaño Y Ubicacion
+    int Ubi=Leer.s_bm_block_start;
+    int Tamanio=Leer.s_blocks_count;
+    //Ubicarse En el BM
+    fseek(f,Ubi,SEEK_SET);
+    char Lectura;
+    std::string Salida="";
+    int Contador=1;
+    for(int i=0;i<Tamanio;i++){
+        Contador++;
+        fread(&Lectura,sizeof(Lectura),1,f);
+        Salida=Salida+Lectura;
+        if(Contador>20){
+            Salida=Salida+'\n';
+            Contador=1;
+        }
+    }
+    fclose(f);
+    char Cop[1+Salida.length()];
+    strcpy(Cop,Salida.c_str());
+    f=fopen(Path,"w");
+    if (!f){
+        return ;
+    }else{
+        fwrite(&Cop,sizeof(Cop),1,f);
+        fclose(f);
+    }
+
+}
 std::string Reports::TablaPAR(PAR Parti,int Num){
     std::string  Reporte="";
     Reporte = Reporte+"\n <TR>  <TD> "+"par_status_"+std::to_string(Num)+" </TD><TD> "+Parti.part_status+"</TD> </TR> \n";

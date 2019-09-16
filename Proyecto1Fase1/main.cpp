@@ -19,14 +19,11 @@ extern int yyrestart( FILE* archivo);//METODO QUE PASA EL ARCHIVO A FLEX
 extern int yyparse();
 
 
-
 int main()
 {
 
 
-
-
-    Functions *Fu = new Functions();
+   /* Functions *Fu = new Functions();
     Sistema *Ex= new Sistema();
     while (true) {
 
@@ -41,7 +38,7 @@ int main()
         }
         Ex->Ejecutar(Exec);
     }
-
+*/
 
 
     /*Functions *Fun = new Functions();

@@ -1,6 +1,212 @@
 #include "disco.h"
 #include "reports.h"
 #include "ext.h"
+void Disco::BorrarArchivoParticion(const char *Nombre, const char *Path){
+    Disco *Tempo=this;
+    while (Tempo!=nullptr) {
+
+        for (int i=0;i<Tempo->Lista.count();i++) {
+            MOU Te= Lista.at(i);
+            std::string NombreParti=Tempo->Apodo+std::to_string(Te.Numero);
+            if(Fun->IF(NombreParti,Nombre)){
+                EXT *E = new EXT();
+                const char* Real=Tempo->Path.data();
+                int Comienzo;
+                //Es Logica
+                if(Te.EsLogica){
+                    Comienzo=Te.Logica.part_start+int(sizeof(EBR));
+                }else{
+                    //TamanioStruct=int(sizeof(EBR));
+                    Comienzo=Te.Particion.part_start;
+                }
+
+                //Tipo De Formato
+
+                FILE *f;
+                f=fopen(Real,"r+");
+                SPB Super;
+                fseek(f,Comienzo,SEEK_SET);
+                fread(&Super,sizeof(Super),1,f);
+                fclose(f);
+                //std::cout<<Super.s_block_start<<std::endl;
+
+                E->EliminarArchivoCarpeta(&Super,Super.s_first_ino,Path,Tempo->Path.data());
+
+                return ;
+            }
+        }
+        Tempo=Tempo->Siguiente;
+    }
+
+    std::cout<<"No Se Encontro La Particion "<<Nombre<<" Para Poder Leerla"<<std::endl;
+    return ;
+}
+std::string Disco::LeerArchivoParticion(const char *Nombre, const char *Path){
+    Disco *Tempo=this;
+    while (Tempo!=nullptr) {
+
+        for (int i=0;i<Tempo->Lista.count();i++) {
+            MOU Te= Lista.at(i);
+            std::string NombreParti=Tempo->Apodo+std::to_string(Te.Numero);
+            if(Fun->IF(NombreParti,Nombre)){
+                EXT *E = new EXT();
+                const char* Real=Tempo->Path.data();
+                int Comienzo;
+                //Es Logica
+                if(Te.EsLogica){
+                    Comienzo=Te.Logica.part_start+int(sizeof(EBR));
+                }else{
+                    //TamanioStruct=int(sizeof(EBR));
+                    Comienzo=Te.Particion.part_start;
+                }
+
+                //Tipo De Formato
+
+                FILE *f;
+                f=fopen(Real,"r+");
+                SPB Super;
+                fseek(f,Comienzo,SEEK_SET);
+                fread(&Super,sizeof(Super),1,f);
+                fclose(f);
+                //std::cout<<Super.s_block_start<<std::endl;
+                std::string Lectura=E->LeerArchivo(Super.s_first_ino,Tempo->Path.data(),Path);
+
+                return Lectura;
+            }
+        }
+        Tempo=Tempo->Siguiente;
+    }
+
+    std::cout<<"No Se Encontro La Particion "<<Nombre<<" Para Poder Leerla"<<std::endl;
+    return "";
+}
+
+void Disco::ExpandirArchivoParticion(const char *Nombre, const char *Path,  std::string Contenido){
+    Disco *Tempo=this;
+    while (Tempo!=nullptr) {
+
+        for (int i=0;i<Tempo->Lista.count();i++) {
+            MOU Te= Lista.at(i);
+            std::string NombreParti=Tempo->Apodo+std::to_string(Te.Numero);
+            if(Fun->IF(NombreParti,Nombre)){
+                EXT *E = new EXT();
+                const char* Real=Tempo->Path.data();
+                int Comienzo;
+                //Es Logica
+                if(Te.EsLogica){
+                    Comienzo=Te.Logica.part_start+int(sizeof(EBR));
+                }else{
+                    //TamanioStruct=int(sizeof(EBR));
+                    Comienzo=Te.Particion.part_start;
+                }
+
+                //Tipo De Formato
+
+                FILE *f;
+                f=fopen(Real,"r+");
+                SPB Super;
+                fseek(f,Comienzo,SEEK_SET);
+                fread(&Super,sizeof(Super),1,f);
+                fclose(f);
+                //std::cout<<Super.s_block_start<<std::endl;
+
+                E->ExpandirArchivo(&Super,Super.s_first_ino,Path,Real,Contenido);
+                return;
+            }
+        }
+        Tempo=Tempo->Siguiente;
+    }
+
+    std::cout<<"No Se Encontro La Particion "<<Nombre<<" Para Crear Carpeta"<<std::endl;
+}
+
+
+void Disco::CrearArchivoParticion(const char *Nombre, const char *Path, char Padre, std::string Contenido){
+    Disco *Tempo=this;
+    while (Tempo!=nullptr) {
+
+        for (int i=0;i<Tempo->Lista.count();i++) {
+            MOU Te= Lista.at(i);
+            std::string NombreParti=Tempo->Apodo+std::to_string(Te.Numero);
+            if(Fun->IF(NombreParti,Nombre)){
+                EXT *E = new EXT();
+                const char* Real=Tempo->Path.data();
+                int Comienzo;
+                //Es Logica
+                if(Te.EsLogica){
+                    Comienzo=Te.Logica.part_start+int(sizeof(EBR));
+                }else{
+                    //TamanioStruct=int(sizeof(EBR));
+                    Comienzo=Te.Particion.part_start;
+                }
+
+                //Tipo De Formato
+
+                FILE *f;
+                f=fopen(Real,"r+");
+                SPB Super;
+                fseek(f,Comienzo,SEEK_SET);
+                fread(&Super,sizeof(Super),1,f);
+                fclose(f);
+                //std::cout<<Super.s_block_start<<std::endl;
+                if(Padre=='0'){
+                    E->CrearArchivoSimple(&Super,Super.s_first_ino,Path,Real,Contenido);
+                }else{
+                   E->CrearArchivoCompleto(&Super,Super.s_first_ino,Path,Real,Contenido);
+                }
+
+                return;
+            }
+        }
+        Tempo=Tempo->Siguiente;
+    }
+
+    std::cout<<"No Se Encontro La Particion "<<Nombre<<" Para Crear Carpeta"<<std::endl;
+}
+
+void Disco::CrearCarpetaParticion(const char *Nombre, const char *Path, char Padre){
+    Disco *Tempo=this;
+    while (Tempo!=nullptr) {
+
+        for (int i=0;i<Tempo->Lista.count();i++) {
+            MOU Te= Lista.at(i);
+            std::string NombreParti=Tempo->Apodo+std::to_string(Te.Numero);
+            if(Fun->IF(NombreParti,Nombre)){
+                EXT *E = new EXT();
+                const char* Real=Tempo->Path.data();
+                int Comienzo;
+                //Es Logica
+                if(Te.EsLogica){
+                    Comienzo=Te.Logica.part_start+int(sizeof(EBR));
+                }else{
+                    //TamanioStruct=int(sizeof(EBR));
+                    Comienzo=Te.Particion.part_start;
+                }
+
+                //Tipo De Formato
+
+                FILE *f;
+                f=fopen(Real,"r+");
+                SPB Super;
+                fseek(f,Comienzo,SEEK_SET);
+                fread(&Super,sizeof(Super),1,f);
+                fclose(f);
+                //std::cout<<Super.s_block_start<<std::endl;
+                if(Padre=='0'){
+                    E->CrearCarpetaSimple(&Super,Super.s_first_ino,Path,Real);
+                }else{
+                    E->CrearCarpetaCompleto(&Super,Super.s_first_ino,Path,Real);
+                }
+
+                return;
+            }
+        }
+        Tempo=Tempo->Siguiente;
+    }
+
+    std::cout<<"No Se Encontro La Particion "<<Nombre<<" Para Crear Carpeta"<<std::endl;
+
+}
 void Disco::FormatearParticion(const char *Nombre, int Tipo){
     Disco *Tempo=this;
     while (Tempo!=nullptr) {
@@ -78,7 +284,7 @@ void Disco::AgregarParticion(const char *Nombre){
         if(ParIndex==-1){
            EBR Logic=Fun->SearchEBR(Nombre,Path.data());
             if(Logic.part_status=='\0'){
-                std::cout<<"No Se Encontro La Particion "<<Nombre<<" En El Disco De  "<<this->Path<<std::endl;
+                std::cout<<"No Se Encontro La Particion '"<<Nombre<<"' Para Montar En El Disco De  "<<this->Path<<std::endl;
                 return;
             }else{//Es Logica
                 Mont.EsLogica=true;
@@ -123,6 +329,23 @@ void Disco::BorrarParticion(const char *Nombre){
     std::cout<<"No Se Encontro La Particion "<<Nombre<<std::endl;
 }
 
+bool Disco::ExisteParticionMontada(const char *Nombre){
+    Disco *Tempo=this;
+    while (Tempo!=nullptr) {
+
+        for (int i=0;i<Tempo->Lista.count();i++) {
+            MOU Te= Lista.at(i);
+            std::string NombreParti=Tempo->Apodo+std::to_string(Te.Numero);
+            if(Fun->IF(NombreParti,Nombre)){
+                return true;
+
+            }
+        }
+        Tempo=Tempo->Siguiente;
+    }
+    return false;
+
+}
 void Disco::BuscarDisco(const char *Nombre){
     Disco *Tempo=this;
     while (Tempo!=nullptr) {
@@ -172,6 +395,15 @@ void Disco::Reporte(const char *ID, const char *Path, const char *Tipo){
             MOU Te= Lista.at(i);
             std::string NombreParti=Tempo->Apodo+std::to_string(Te.Numero);
             if(Fun->IF(NombreParti,ID)){
+                int InicioParti=0;
+                if(!Te.EsLogica){
+                    InicioParti=Te.Particion.part_start;
+                }else{
+                    InicioParti=Te.Logica.part_start+int(sizeof(EBR));
+                }
+
+
+
                 Reports *R= new Reports();
                 if(Fun->IF(Tipo,"disk")){
                     R->Graphviz(Tempo->Path.data(),Path);
@@ -183,8 +415,16 @@ void Disco::Reporte(const char *ID, const char *Path, const char *Tipo){
                         R->ReporteTablaEBR(Te.Logica,Path,Te.Numero);
                     }
 
-                }else{
-                    Fun->Out("Impos");
+                }else if(Fun->IF(Tipo,"bm_inode")){
+                    R->Reportebm_Inodo(InicioParti,Tempo->Path.data(),Path);
+                }else if(Fun->IF(Tipo,"bm_block")){
+                    R->Reportebm_Bloque(InicioParti,Tempo->Path.data(),Path);
+                }else if(Fun->IF(Tipo,"tree")){
+                    R->ReporteArbol(InicioParti,Tempo->Path.data(),Path);
+                }
+
+                else{
+                    Fun->Out("Error En Reporte Del Disco");
                 }
                 delete(R);
                 return;
