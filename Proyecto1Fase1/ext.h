@@ -8,6 +8,19 @@
 class EXT
 {
 public:
+
+    //Cambiar Dueño
+    void CambiarPropietarioNormalRecursivo(int Comienzo,const char *PathVirtual,const char *PathReal,IUG Permiso);
+    //FIND
+    void FIND(int Comienzo,std::string PathVirtual,const char *PathReal);
+    //MoverCarpetaOArchivo
+    void MoverCarpetaArchivo(SPB *Super,int Comienzo,std::string PathVirtualOrigen,const char *PathReal,std::string PathVirtualDestino);
+    //CopiaCarpetaOArchivo
+    void CopiarCarpetaArchivo(SPB *Super,int Comienzo,std::string PathVirtualOrigen,const char *PathReal,std::string PathVirtualDestino);
+    //Renombrar Archivo O Carpeta
+    bool CambiarNombre(int Comienzo,std::string PathVirtual,const char *PathReal,std::string Renombre);
+    //Cambiar Permisos Normal Y Recursivo  Ope 1== Normal    Ope 2== Recursivo
+    void CambiarPermisosNormalRecursivo(int Comienzo,const char *PathVirtual,const char *PathReal,int Ope,int Perm);
     //Eliminar ArchivoCarpeta
     bool EliminarArchivoCarpeta(SPB *Super,int Comienzo,const char *PathVirtual,const char *PathReal);
     //Leer Archivo Almacenado
@@ -22,15 +35,36 @@ public:
     bool CrearCarpetaCompleto(SPB *Super,int Comienzo,const char *PathVirtual,const char *PathReal);
     //CrearCarpetasSimples
     bool CrearCarpetaSimple(SPB *Super,int Comienzo,const char *PathVirtual,const char *PathReal);
-
     //Calcular la cantidad de estructruas
     int CalcularCantidad(int Tamanio,int Tipo);
     //CrearFormato
     SPB LlenarSuperBloque(int Tipo,int Comienzo,int Cantidad);
     void EstructurarFormatoEXT2(int ComienzoParticion,int TamanioParticion,int TamanioStruct,std::string Direcc);
     void EstructurarFormatoEXT3(int ComienzoParticion,int TamanioParticion,int TamanioStruct,std::string  Direcc);
-    EXT();
+    EXT(IUG Permiso);
 private :
+    void DuplicarInodo(INO *Original,INO *Copia);
+    IUG Permiso;
+    //Copiar
+    int CopiarInodo(SPB *Super,int Comienzo,const char *PathReal);
+    int CopiarDirectos(SPB *Super,int Comienzo,const char *PathReal,int Tipo);
+    int CopiarIndirectos(SPB *Super,int Nivel, int NivelActual,int Comienzo,const char *PathReal,int Tipo);
+    int CopiarContenido(SPB *Super,int Comienzo,const char *PathReal);
+    //Renombrar
+    bool RenombrarInodo(int Comienzo,const char *PathReal,std::string  Info,std::string  Busqueda);
+    bool RenombrarDirectos(int Comienzo,const char *PathReal,std::string  Info,std::string  Busqueda);
+    bool RenombrarIndirectos(int Nivel, int NivelActual,int Comienzo,const char *PathReal,std::string  Info,std::string  Busqueda);
+    //Permisos
+    bool TienePermiso(int Comienzo,const char * PathReal,std::string Info);
+    std::string PermisosEnElPadre(int Comienzo,const char * PathReal);
+    //ComprobarPermisos
+    bool PermisoInodo(int Comienzo,const char *PathReal);
+    bool PermisoDirectos(int Comienzo,const char *PathReal);
+    bool PermisoIndirectos(int Nivel, int NivelActual,int Comienzo,const char *PathReal);
+    //ModificarValores
+    void ModificarInodo(int Comienzo,const char *PathReal,int Tipo,int Perm);
+    void ModificarDirectos(int Comienzo,const char *PathReal, int Tipo,int Perm );
+    void ModificarIndirectos(int Nivel, int NivelActual,int Comienzo,const char *PathReal, int Tipo,int Perm);
     //Eliminar
     bool EliminarArchivoCarpetaPadre(SPB *Super,int Comienzo,const char *PathVirtual,const char *PathReal,int Hijo);
     void LiberarBloque(SPB *Super,const char *PathReal,int Comienzo);
@@ -56,12 +90,13 @@ private :
     //Poner Archivo
     int ColocarArchivo(std::string NombreCarpeta,int PosDirecto,SPB *Super,const char *PathReal,std::string Contenido);
     //CrearCarpetaSimpleEn Apuntadores Drectos
-    bool CarpetaArchivoSimpleDirectos(INO *Ino,SPB *Super,int PosPadre, const char *PathReal ,std::string NombreCarpeta,std::string Contenido);
+    int CarpetaArchivoSimpleDirectos(INO *Ino,SPB *Super,int PosPadre, const char *PathReal ,std::string NombreCarpeta,std::string Contenido);
     //CrearCarpetaSimpleEn Apuntadores Indirectos
-    bool CarpetaArchivoSimpleInDirectos(INO *Ino,SPB *Super,int PosPadre, const char *PathReal,const char *PathVirtual ,std::string NombreCarpeta,std::string Contenido);
+    int CarpetaArchivoSimpleInDirectos(INO *Ino,SPB *Super,int PosPadre, const char *PathReal,const char *PathVirtual ,std::string NombreCarpeta,std::string Contenido);
     //CantidadDeBarras
     int CantidadBarras(std::string Path);
     //Nombre De La Cosa A Crear
+    std::string PathArchivo(const char *PathVirtual);
     std::string NombreACrear(const char *PathVirtual);
     //Buscar Inodo Libre
     int InodoLibre(SPB *Super,const char* Path);

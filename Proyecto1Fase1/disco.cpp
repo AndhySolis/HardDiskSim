@@ -1,7 +1,7 @@
 #include "disco.h"
 #include "reports.h"
 #include "ext.h"
-void Disco::BorrarArchivoParticion(const char *Nombre, const char *Path){
+void Disco::PermisoArchivoParticion(const char *Nombre,const char *Path,int Tipo,int Perm,IUG Permiso){
     Disco *Tempo=this;
     while (Tempo!=nullptr) {
 
@@ -9,7 +9,47 @@ void Disco::BorrarArchivoParticion(const char *Nombre, const char *Path){
             MOU Te= Lista.at(i);
             std::string NombreParti=Tempo->Apodo+std::to_string(Te.Numero);
             if(Fun->IF(NombreParti,Nombre)){
-                EXT *E = new EXT();
+                EXT *E = new EXT(Permiso);
+                const char* Real=Tempo->Path.data();
+                int Comienzo;
+                //Es Logica
+                if(Te.EsLogica){
+                    Comienzo=Te.Logica.part_start+int(sizeof(EBR));
+                }else{
+                    //TamanioStruct=int(sizeof(EBR));
+                    Comienzo=Te.Particion.part_start;
+                }
+
+                //Tipo De Formato
+
+                FILE *f;
+                f=fopen(Real,"r+");
+                SPB Super;
+                fseek(f,Comienzo,SEEK_SET);
+                fread(&Super,sizeof(Super),1,f);
+                fclose(f);
+
+                E->CambiarPermisosNormalRecursivo(Super.s_first_ino,Path,Tempo->Path.data(),Tipo,Perm);
+                return ;
+            }
+        }
+        Tempo=Tempo->Siguiente;
+    }
+
+    std::cout<<"No Se Encontro La Particion "<<Nombre<<" Para Poder Modificar Permisos"<<std::endl;
+    return ;
+}
+
+
+void Disco::BorrarArchivoParticion(const char *Nombre, const char *Path,IUG Permiso){
+    Disco *Tempo=this;
+    while (Tempo!=nullptr) {
+
+        for (int i=0;i<Tempo->Lista.count();i++) {
+            MOU Te= Lista.at(i);
+            std::string NombreParti=Tempo->Apodo+std::to_string(Te.Numero);
+            if(Fun->IF(NombreParti,Nombre)){
+                EXT *E = new EXT(Permiso);
                 const char* Real=Tempo->Path.data();
                 int Comienzo;
                 //Es Logica
@@ -41,7 +81,8 @@ void Disco::BorrarArchivoParticion(const char *Nombre, const char *Path){
     std::cout<<"No Se Encontro La Particion "<<Nombre<<" Para Poder Leerla"<<std::endl;
     return ;
 }
-std::string Disco::LeerArchivoParticion(const char *Nombre, const char *Path){
+
+std::string Disco::LeerArchivoParticion(const char *Nombre, const char *Path,IUG Permiso){
     Disco *Tempo=this;
     while (Tempo!=nullptr) {
 
@@ -49,7 +90,7 @@ std::string Disco::LeerArchivoParticion(const char *Nombre, const char *Path){
             MOU Te= Lista.at(i);
             std::string NombreParti=Tempo->Apodo+std::to_string(Te.Numero);
             if(Fun->IF(NombreParti,Nombre)){
-                EXT *E = new EXT();
+                EXT *E = new EXT(Permiso);
                 const char* Real=Tempo->Path.data();
                 int Comienzo;
                 //Es Logica
@@ -81,7 +122,7 @@ std::string Disco::LeerArchivoParticion(const char *Nombre, const char *Path){
     return "";
 }
 
-void Disco::ExpandirArchivoParticion(const char *Nombre, const char *Path,  std::string Contenido){
+void Disco::ExpandirArchivoParticion(const char *Nombre, const char *Path,  std::string Contenido,IUG Permiso){
     Disco *Tempo=this;
     while (Tempo!=nullptr) {
 
@@ -89,7 +130,7 @@ void Disco::ExpandirArchivoParticion(const char *Nombre, const char *Path,  std:
             MOU Te= Lista.at(i);
             std::string NombreParti=Tempo->Apodo+std::to_string(Te.Numero);
             if(Fun->IF(NombreParti,Nombre)){
-                EXT *E = new EXT();
+                EXT *E = new EXT(Permiso);
                 const char* Real=Tempo->Path.data();
                 int Comienzo;
                 //Es Logica
@@ -121,7 +162,7 @@ void Disco::ExpandirArchivoParticion(const char *Nombre, const char *Path,  std:
 }
 
 
-void Disco::CrearArchivoParticion(const char *Nombre, const char *Path, char Padre, std::string Contenido){
+void Disco::CrearArchivoParticion(const char *Nombre, const char *Path, char Padre, std::string Contenido,IUG Permiso){
     Disco *Tempo=this;
     while (Tempo!=nullptr) {
 
@@ -129,7 +170,7 @@ void Disco::CrearArchivoParticion(const char *Nombre, const char *Path, char Pad
             MOU Te= Lista.at(i);
             std::string NombreParti=Tempo->Apodo+std::to_string(Te.Numero);
             if(Fun->IF(NombreParti,Nombre)){
-                EXT *E = new EXT();
+                EXT *E = new EXT(Permiso);
                 const char* Real=Tempo->Path.data();
                 int Comienzo;
                 //Es Logica
@@ -164,7 +205,7 @@ void Disco::CrearArchivoParticion(const char *Nombre, const char *Path, char Pad
     std::cout<<"No Se Encontro La Particion "<<Nombre<<" Para Crear Carpeta"<<std::endl;
 }
 
-void Disco::CrearCarpetaParticion(const char *Nombre, const char *Path, char Padre){
+void Disco::CrearCarpetaParticion(const char *Nombre, const char *Path, char Padre,IUG Permiso){
     Disco *Tempo=this;
     while (Tempo!=nullptr) {
 
@@ -172,7 +213,7 @@ void Disco::CrearCarpetaParticion(const char *Nombre, const char *Path, char Pad
             MOU Te= Lista.at(i);
             std::string NombreParti=Tempo->Apodo+std::to_string(Te.Numero);
             if(Fun->IF(NombreParti,Nombre)){
-                EXT *E = new EXT();
+                EXT *E = new EXT(Permiso);
                 const char* Real=Tempo->Path.data();
                 int Comienzo;
                 //Es Logica
@@ -207,7 +248,7 @@ void Disco::CrearCarpetaParticion(const char *Nombre, const char *Path, char Pad
     std::cout<<"No Se Encontro La Particion "<<Nombre<<" Para Crear Carpeta"<<std::endl;
 
 }
-void Disco::FormatearParticion(const char *Nombre, int Tipo){
+void Disco::FormatearParticion(const char *Nombre, int Tipo,IUG Permiso){
     Disco *Tempo=this;
     while (Tempo!=nullptr) {
 
@@ -215,7 +256,7 @@ void Disco::FormatearParticion(const char *Nombre, int Tipo){
             MOU Te= Lista.at(i);
             std::string NombreParti=Tempo->Apodo+std::to_string(Te.Numero);
             if(Fun->IF(NombreParti,Nombre)){
-                EXT *E = new EXT();
+                EXT *E = new EXT(Permiso);
                 std::string Path=Tempo->Path;
                 int TamanioStruct;
                 int TamanioParticion;

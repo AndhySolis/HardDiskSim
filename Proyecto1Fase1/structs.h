@@ -5,7 +5,10 @@
 #include<QDebug>
 #include <iostream>
 #include <stdio.h>
-
+typedef struct  Identificador{
+    int Gid=-5;
+    int Uid=-5;
+}IUG;
 
 typedef struct  Grupo{
     int Gid;

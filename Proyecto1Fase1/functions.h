@@ -28,6 +28,7 @@ public:
     EBR SearchEBR(const char *Name,const char *Path);
     int SearchPAR(const char *Name,const char *Path);
     bool ExisteArchivo(const char *Path);
+    std::string DecimalBinario(char Decimal);
 private:
     bool Valido(int Num);
     void EscribirRandom(int Num);

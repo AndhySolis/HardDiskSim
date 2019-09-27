@@ -105,6 +105,8 @@ std::string OperacionUsuario::CrearGrupo(std::string Nombre){
 }
 //
 void OperacionUsuario::Limpiar(){
+    Permiso.Gid=-5;
+    Permiso.Uid=-5;
     this->IDMontado="";
     this->SistemaGrupo= new QList<GRU>;
     this->SistemaUsuario= new QList<USU>;
@@ -112,13 +114,17 @@ void OperacionUsuario::Limpiar(){
 }
 bool OperacionUsuario::Login(std::string Id, std::string Contra){
     USU Usu= BuscarUsuario(Id);
-    if(Usu.Uid==-1)
+    if(Usu.Uid==-1){
+        std::cout<<"No Se Encontro El Usuario"<<std::endl;
         return false;
+    }
     if(Fun->IFEspecial(Contra,Usu.Contrasenia)){
         UsuarioActual=&Usu;
+        Permiso.Gid=Usu.Grupo->Gid;
+        Permiso.Uid=Usu.Uid;
         return true;
      }
-
+    std::cout<<"Contrasenia Incorrecta"<<std::endl;
     return false;
 }
 OperacionUsuario::OperacionUsuario()
@@ -130,6 +136,7 @@ OperacionUsuario::OperacionUsuario()
     UsuarioActual=nullptr;
 }
 void OperacionUsuario::CargarDatos(std::string Texto){
+
     SaltosDeLinea(Texto);
 }
 void OperacionUsuario::SaltosDeLinea(std::string Texto){
@@ -144,6 +151,9 @@ void OperacionUsuario::SaltosDeLinea(std::string Texto){
     }
 }
 void OperacionUsuario::Comas(std::string Texto){
+
+
+
     int Cantidad=CantidadComas(Texto);
     std::string s = Texto;
     std::string delimiter = ",";
@@ -168,6 +178,7 @@ void OperacionUsuario::Comas(std::string Texto){
             s.erase(0, pos + delimiter.length());
         }
         GrupoNuevo.Grupo=s;
+
         SistemaGrupo->push_front(GrupoNuevo);
     }
 
@@ -216,10 +227,12 @@ int OperacionUsuario::CantidadComas(std::string Texto){
     return Contador;
 }
 bool OperacionUsuario::HayUsuarioEnElSistema(){
+
+
     if(UsuarioActual!=nullptr)
         return true;
     else{
-        std::cout<<"No Hay Usuario En El Sistema, Se Necesita Ingresar"<<std::endl;
+
         return false;
         }
 }
@@ -245,8 +258,9 @@ GRU OperacionUsuario::BuscarGrupo(std::string Nombre){
 USU OperacionUsuario::BuscarUsuario(std::string Nombre){
     int Longitud=SistemaUsuario->length();
     USU Usu;
+
     for (int i=0;i<Longitud;i++) {
-        Usu=SistemaUsuario->at(i);
+        Usu=SistemaUsuario->at(i);        
         if(Fun->IFEspecial(Usu.Usuario,Nombre)){
             if(Usu.Uid!=0)
                 return Usu;

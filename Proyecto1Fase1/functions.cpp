@@ -10,9 +10,48 @@
 #include <stdio.h>
 #include <string.h>
 #include <sstream>
+
 Functions::Functions()
 {
 
+}
+std::string Functions::DecimalBinario(char Decimal){
+    std::string Retorno="";
+    switch (Decimal) {
+    case '0':{
+        Retorno="000";
+        break;
+    }
+    case '1':{
+        Retorno="001";
+        break;
+    }
+    case '2':{
+        Retorno="010";
+        break;
+    }
+    case '3':{
+        Retorno="011";
+        break;
+    }
+    case '4':{
+        Retorno="100";
+        break;
+    }
+    case '5':{
+        Retorno="101";
+        break;
+    }
+    case '6':{
+        Retorno="110";
+        break;
+    }
+    case '7':{
+        Retorno="111";
+        break;
+    }
+    }
+    return Retorno;
 }
 void Functions::EscribirRandom(int Num){
     Functions *F = new Functions();

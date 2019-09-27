@@ -6,18 +6,22 @@
 class Disco
 {
 public:
+    //CHMOD
+    void  PermisoArchivoParticion(const char *Nombre,const char *Path,int Tipo,int Perm,IUG Permiso);
     //REM
-    void  BorrarArchivoParticion(const char *Nombre,const char *Path);
+    void  BorrarArchivoParticion(const char *Nombre,const char *Path,IUG Permiso);
     //CAT
-    std::string LeerArchivoParticion(const char *Nombre,const char *Path);
+    std::string LeerArchivoParticion(const char *Nombre,const char *Path,IUG Permiso);
     //EDIT
-    void ExpandirArchivoParticion(const char *Nombre,const char *Path,std::string Contenido);
+    void ExpandirArchivoParticion(const char *Nombre,const char *Path,std::string Contenido,IUG Permiso);
     //MKFILE
-    void CrearArchivoParticion(const char *Nombre,const char *Path, char Padre,std::string Contenido);
+    void CrearArchivoParticion(const char *Nombre,const char *Path, char Padre,std::string Contenido,IUG Permiso);
     //MKDIR
-    void CrearCarpetaParticion(const char *Nombre,const char *Path, char Padre);
+    void CrearCarpetaParticion(const char *Nombre,const char *Path, char Padre,IUG Permiso);
     //FDISK
-    void FormatearParticion(const char *Nombre,int Tipo);
+    void FormatearParticion(const char *Nombre,int Tipo,IUG Permiso);
+    //---------------------------------FASE1
+
 
     bool ParticionLibreParaBorrar(const char *Nombre);
     bool DiscoLibreParaBorrar(const char *Nombre);

@@ -2,6 +2,24 @@
 #include <iostream>
 
 #include <fstream>
+//CHMOD
+void Menu::CHMOD(const char *PathVirtual, int Ugo, int Tipo){
+    Disco *Ptr=this->PrimerDisco;
+    if(Ptr==nullptr){
+        std::cout<<"No Hay Ninguna Particion Montada En El Sistema"<<std::endl;
+    }else {
+        if(OpeU->HayUsuarioEnElSistema()){
+            std::string Num=std::to_string(Ugo);
+            std::string Entrada="2"+Fun->DecimalBinario(Num.data()[0]);
+            Entrada=Entrada+Fun->DecimalBinario(Num.data()[1]);
+            Entrada=Entrada+Fun->DecimalBinario(Num.data()[2]);
+            Ugo=std::atoi(Entrada.c_str());
+            this->PrimerDisco->PermisoArchivoParticion(OpeU->IDMontado.data(),PathVirtual,Tipo,Ugo,OpeU->Permiso);
+        }else{
+            std::cout<<"No Hay Usuarios En El Sistema"<<std::endl;
+        }
+    }
+}
 //MKUSR
 void Menu::MKUSR(const char *USR, const char *Pwd, const char *Grp){
     if(OpeU->HayUsuarioEnElSistema()){
@@ -12,6 +30,8 @@ void Menu::MKUSR(const char *USR, const char *Pwd, const char *Grp){
         }else{
             std::cout<<"Se Necesitan Permisos 'Root' Para Crear Usuarios"<<std::endl;
         }
+    }else{
+        std::cout<<"No Hay Usuario En El Sistema, Se Necesita Ingresar"<<std::endl;
     }
 }
 //RMUSR
@@ -25,6 +45,8 @@ void Menu::RMUSR(const char *USR){
         }else{
             std::cout<<"Se Necesitan Permisos 'Root' Para Eliminar Usuarios"<<std::endl;
         }
+    }else{
+        std::cout<<"No Hay Usuario En El Sistema, Se Necesita Ingresar"<<std::endl;
     }
 }
 //RMGRP
@@ -38,6 +60,8 @@ void Menu::RMGRP(const char *Nombre){
         }else{
             std::cout<<"Se Necesitan Permisos 'Root' Para Eliminar Grupos"<<std::endl;
         }
+    }else{
+        std::cout<<"No Hay Usuario En El Sistema, Se Necesita Ingresar"<<std::endl;
     }
 }
 //MKGRP
@@ -50,6 +74,8 @@ void Menu::MKGRP(const char *Nombre){
         }else{
             std::cout<<"Se Necesitan Permisos 'Root' Para Crear Grupos"<<std::endl;
         }
+    }else{
+        std::cout<<"No Hay Usuario En El Sistema, Se Necesita Ingresar"<<std::endl;
     }
 }
 
@@ -60,7 +86,7 @@ void Menu::REM(const char *Path){
         std::cout<<"No Hay Ninguna Particion Montada En El Sistema"<<std::endl;
     }else {
         if(OpeU->HayUsuarioEnElSistema()){
-            this->PrimerDisco->BorrarArchivoParticion(OpeU->IDMontado.data(),Path);
+            this->PrimerDisco->BorrarArchivoParticion(OpeU->IDMontado.data(),Path,OpeU->Permiso);
         }else{
             std::cout<<"No Hay Usuarios En El Sistema"<<std::endl;
         }
@@ -81,23 +107,28 @@ void Menu::LOGIN(const char *Usr, const char *Pwd, const char *Id){
         std::cout<<"Ya Hay Usuario En El Sistema"<<std::endl;
         return;
     }
-
-
-    OpeU->CargarDatos(CAT("/users.txt"));
+    if(!this->PrimerDisco->ExisteParticionMontada(Id)){
+        std::cout<<"La Particion Solicitada No Existe, Cancelando Login"<<std::endl;
+        OpeU->Limpiar();
+        return;
+    }
+    IUG PermisoFalso;
+    PermisoFalso.Gid=1;
+    PermisoFalso.Uid=1;
+    OpeU->CargarDatos(this->PrimerDisco->LeerArchivoParticion(Id,"/users.txt",PermisoFalso));
     bool Valido=OpeU->Login(Usr,Pwd);
     if(Valido){
         Disco *Ptr=this->PrimerDisco;
         if(Ptr==nullptr){
             std::cout<<"No Hay Ninguna Particion Montada En El Sistema"<<std::endl;
         }else {
-            if(this->PrimerDisco->ExisteParticionMontada(Id)){
+
                 OpeU->IDMontado=Id;
                 std::cout<<"Credenciales Validas, Ingresando Como El Usuario: "<<Usr<<std::endl;
                 std::cout<<"Usando La Particion Montada: "<<Id<<std::endl;
-            }else{
-                std::cout<<"La Particion Solicitada No Existe, Cancelando Login"<<std::endl;
-                OpeU->Limpiar();
-            }
+
+
+
         }
     }else{
         std::cout<<"Credenciales Incorrectas, Contrasenia o Usuario Erroneo"<<Id<<std::endl;
@@ -110,7 +141,7 @@ void Menu::EDIT(const char *Path, const char *Contenido){
         std::cout<<"No Hay Ninguna Particion Montada En El Sistema"<<std::endl;
     }else {
         if(OpeU->HayUsuarioEnElSistema()){
-            this->PrimerDisco->ExpandirArchivoParticion(OpeU->IDMontado.data(),Path,Contenido);
+            this->PrimerDisco->ExpandirArchivoParticion(OpeU->IDMontado.data(),Path,Contenido,OpeU->Permiso);
         }else{
             std::cout<<"No Hay Usuarios En El Sistema"<<std::endl;
         }
@@ -124,7 +155,7 @@ std::string Menu::CAT(const char *Path){
         std::cout<<"No Hay Ninguna Particion Montada En El Sistema"<<std::endl;
     }else {
         if(OpeU->HayUsuarioEnElSistema()){
-            Lectura= this->PrimerDisco->LeerArchivoParticion(OpeU->IDMontado.data(),Path);
+            Lectura= this->PrimerDisco->LeerArchivoParticion(OpeU->IDMontado.data(),Path,OpeU->Permiso);
         }else{
             std::cout<<"No Hay Usuarios En El Sistema"<<std::endl;
         }
@@ -138,7 +169,7 @@ void Menu::MKFILE(const char *Path, char Padre,const char *Contenido){
         std::cout<<"No Hay Ninguna Particion Montada En El Sistema"<<std::endl;
     }else {
         if(OpeU->HayUsuarioEnElSistema()){
-            this->PrimerDisco->CrearArchivoParticion(OpeU->IDMontado.data(),Path,Padre,Contenido);
+            this->PrimerDisco->CrearArchivoParticion(OpeU->IDMontado.data(),Path,Padre,Contenido,OpeU->Permiso);
         }else{
             std::cout<<"No Hay Usuarios En El Sistema"<<std::endl;
         }
@@ -152,7 +183,7 @@ void Menu::MKDIR(const char *Path, char Padre){
         std::cout<<"No Hay Ninguna Particion Montada En El Sistema"<<std::endl;
     }else {
         if(OpeU->HayUsuarioEnElSistema()){
-           this->PrimerDisco->CrearCarpetaParticion(OpeU->IDMontado.data(),Path,Padre);
+           this->PrimerDisco->CrearCarpetaParticion(OpeU->IDMontado.data(),Path,Padre,OpeU->Permiso);
         }else{
             std::cout<<"No Hay Usuarios En El Sistema"<<std::endl;
         }
@@ -166,7 +197,13 @@ void Menu::MKFS(const char *Id, const char *Type, int EXT){
     if(Ptr==nullptr){
         std::cout<<"No Hay Ninguna Particion Montada En El Sistema"<<std::endl;
     }else {
-        this->PrimerDisco->FormatearParticion(Id,EXT);
+        int A=OpeU->Permiso.Gid;
+        int B=OpeU->Permiso.Uid;
+        OpeU->Permiso.Gid=1;
+        OpeU->Permiso.Uid=1;
+        this->PrimerDisco->FormatearParticion(Id,EXT,OpeU->Permiso);
+        OpeU->Permiso.Gid=A;
+        OpeU->Permiso.Uid=B;
     }
 
 }
@@ -900,26 +937,30 @@ void Menu::NewMenu(){
 
     if(true){
     Fun->Out("-----------------NewMenu--------------");
-    Mkdisk(2,"ff",'M',"I:\\Disco.disk");
-    FDisk(1,"ff",'M',"I:\\Disco.disk",'p',"a");
-    MOUNT("I:\\Disco.disk","a");
+    Mkdisk(2,"ff",'M',"/home/pc/Documents/Archivos/Prueba/Disco.disk");
+    FDisk(1,"ff",'M',"/home/pc/Documents/Archivos/Prueba/Disco.disk",'p',"a");
+    MOUNT("/home/pc/Documents/Archivos/Prueba/Disco.disk","a");
     MKFS("vda1","full",1);
+    LOGIN("root","123","vda1");
+
     MKDIR("/Carpeta/Ubuntu/Wayland/Limite/K/M",'1');
-    MKDIR("/Carpeta3/Ubuntu/Wayland/Limite/K/M/Nueva",'1');
-    MKFILE("/Carpeta3/Ubuntu/Wayland/Limite/K/M/Nueva/Hola.txt",'0',"y El vídeo proporciona una manera eficaz para ayudarle a demostrar el punto.Cuando haga clic en Vídeo en línea, puede pegar el código para ");
+    MKDIR("/Carpeta/Ubuntu/Wayland/Limite/K/M/Nueva",'1');
+    MKFILE("/Carpeta/Ubuntu/Wayland/Limite/K/M/Nueva/Hola.txt",'0',"y El vídeo proporciona una manera eficaz para ayudarle a demostrar el punto.Cuando haga clic en Vídeo en línea, puede pegar el código para ");
+    MKFILE("/Carpeta/Ubuntu/Wayland/Limite/K/M/Nueva/Hola.txt",'0',"y El vídeo proporciona una manera eficaz para ayudarle a demostrar el punto.Cuando haga clic en Vídeo en línea, puede pegar el código para ");
     MKFILE("/Dita.txt",'0',"El vídeo proporciona una manera eficaz para ayudarle a demostrar el punto.Cuando haga clic en Vídeo en línea, puede pegar el código para insertar del vídeo que desea agregar. ");
     EDIT("/Dita.txt","ContenidoMASContenidoMAS");
-
-    REM("/users.txt");
-    std::cout<<"HOLA"<<std::endl;
-
+    CHMOD("/users.txt",233,1);
+    REM("/dita.txt");
 
 
+    //CAT("/users.txt");
 
 
-    REP("vda1","bm_inode","I:\\bm_inodo.txt");
-    REP("vda1","bm_block","I:\\bm_bloque.txt");
-    REP("vda1","tree","I:\\Arbol.png");
+
+    REP("vda1","bm_inode","/home/pc/Documents/Archivos/Prueba/bm_inodo.txt");
+    REP("vda1","bm_block","/home/pc/Documents/Archivos/Prueba/bm_bloque.txt");
+    REP("vda1","tree","/home/pc/Documents/Archivos/Prueba/Arbol.png");
+    std::cout<<"FIN DE EJECUCION"<<std::endl;
     //UNMOUNT("vda1");
     //RMDISK("Disco.disk");
     }

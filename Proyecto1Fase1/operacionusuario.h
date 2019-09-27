@@ -6,6 +6,7 @@
 class OperacionUsuario
 {
 public:
+    IUG Permiso;
     //Operaciones Usuarios
     std::string RemoverUsuario(std::string Usr);
     std::string CrearUsuario(std::string Usr,std::string Pwd,std::string Grp);

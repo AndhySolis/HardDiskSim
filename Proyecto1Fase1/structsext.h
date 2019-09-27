@@ -33,6 +33,7 @@ typedef struct  TablaInodo{
     int i_block[16];
     char i_type;
     int i_perm;
+   // int Vac;
 }INO;
 typedef  struct Contennt{
     char b_name[12];

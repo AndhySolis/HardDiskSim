@@ -7,7 +7,603 @@
 
 /*
  * AL COLOCAR ARCHIVOS,ARCHIVO CONTENIDO Y CARPETAS FALTA COMPROBACION SI SE ACABARON LOS ESOACIOS PARA BLOQUES INODOS
+*El USAR LA CARPETA '/' CAusa Errores
 */
+//Permisos
+
+
+//Mover
+void EXT::MoverCarpetaArchivo(SPB *Super, int Comienzo, std::string PathVirtualOrigen, const char *PathReal, std::string PathVirtualDestino){
+    int Existe=BuscarActual(Comienzo,PathVirtualOrigen,PathReal);
+    //Buscar Que Exista
+    if(Existe==-1){
+        std::cout<<"El Archivo/Carpeta No Existe En La Ruta "<<PathVirtualOrigen<<std::endl;
+        return;
+    }
+    //Leer informacion
+    FILE *f;
+    f=fopen(PathReal,"r+");
+    INO Carpeta;//Leyendo Donde Se Coloco La Carpeta o Archivo Copia
+    fseek(f,Existe,SEEK_SET);
+    fread(&Carpeta,sizeof(Carpeta),1,f);
+    fclose(f);
+    //Borrar Del Padre
+    EliminarArchivoCarpetaPadre(Super,Comienzo,PathVirtualOrigen.data(),PathReal,Existe);
+    //Crear Lugar En El Nuevo Padre
+    //Ver El Tipo
+    int Tipo=0;
+    if(Carpeta.i_type=='1')
+        Tipo=1;
+    //Crear Ubicacion Dependiendo El Tipo
+    if(Tipo==0)
+        CrearCarpetaSimple(Super,Comienzo,PathVirtualDestino.data(),PathReal);
+    else
+        CrearArchivoSimple(Super,Comienzo,PathVirtualDestino.data(),PathReal,"Dummy");
+    //Ver Si Se Pudo Crear
+    int Colocado=BuscarActual(Comienzo,PathVirtualDestino,PathReal);
+    if(Colocado==-1){
+        std::cout<<"No Se Pudo Colocar La Carpeta O Archivo En Su Destino "<<PathVirtualDestino<<std::endl;
+        return;
+    }
+    //Actualizar La Informacion De Lo Creado Con Lo SIMPLE
+    f=fopen(PathReal,"r+");
+    fseek(f,Colocado,SEEK_SET);
+    fwrite(&Carpeta,sizeof(Carpeta),1,f);
+    fclose(f);
+}
+//Copiar
+void EXT::CopiarCarpetaArchivo(SPB *Super,int Comienzo, std::string PathVirtualOrigen, const char *PathReal, std::string PathVirtualDestino){
+    int Actual=BuscarActual(Comienzo,PathVirtualOrigen,PathReal);
+    if(Actual==-1){
+        std::cout<<"No Se Puede Copiar, Porque No Se Encontro La Carpeta/Archivo De Origen  "<<PathVirtualOrigen<<std::endl;
+        return;
+    }
+    //Copiando Archivo O Carpeta
+    Actual=CopiarInodo(Super,Actual,PathReal);
+    if(Actual==-1){
+        std::cout<<"No Se Puede Copiar, Porque No Se Tienen Los Permisos Para Copiar  "<<PathVirtualOrigen<<std::endl;
+        return;
+    }
+    FILE *f;
+    f=fopen(PathReal,"r+");
+    INO Carpeta;//Leyendo Donde Se Coloco La Carpeta o Archivo Copia
+    fseek(f,Actual,SEEK_SET);
+    fread(&Carpeta,sizeof(Carpeta),1,f);
+    fclose(f);
+    //Libera Donde Estaba La Copia
+    LiberarInodo(Super,PathReal,Actual);
+    //Para Colocar En La Ubicacion Destino
+    PathVirtualDestino=PathVirtualDestino+"/"+NombreACrear(PathVirtualOrigen.data());
+    //Ver El Tipo
+    int Tipo=0;
+    if(Carpeta.i_type=='1')
+        Tipo=1;
+    //Crear Ubicacion Dependiendo El Tipo
+    if(Tipo==0)
+        CrearCarpetaSimple(Super,Comienzo,PathVirtualDestino.data(),PathReal);
+    else
+        CrearArchivoSimple(Super,Comienzo,PathVirtualDestino.data(),PathReal,"Dummy");
+    //Ver Si Se Pudo Crear
+    int Colocado=BuscarActual(Comienzo,PathVirtualDestino,PathReal);
+    if(Colocado==-1){
+        std::cout<<"No Se Pudo Colocar La Carpeta O Archivo En Su Destino "<<PathVirtualDestino<<std::endl;
+        return;
+    }
+    //Actualizar La Informacion De Lo Creado Con Lo SIMPLE
+    f=fopen(PathReal,"r+");
+    fseek(f,Colocado,SEEK_SET);
+    fwrite(&Carpeta,sizeof(Carpeta),1,f);
+    fclose(f);
+}
+int EXT::CopiarContenido(SPB *Super,int Comienzo, const char *PathReal){
+    FILE *f;
+    f=fopen(PathReal,"r+");
+    BAR Contenido;
+    fseek(f,Comienzo,SEEK_SET);
+    fread(&Contenido,sizeof(Contenido),1,f);
+    fclose(f);
+    BAR CopiaConte;
+    strcpy(CopiaConte.b_content,Contenido.b_content);
+    int NuevaCopia=BloqueLibre(Super,PathReal);
+    if(NuevaCopia==-1)
+        return NuevaCopia;
+    f=fopen(PathReal,"r+");
+    fseek(f,NuevaCopia,SEEK_SET);
+    fwrite(&CopiaConte,sizeof(CopiaConte),1,f);
+    fclose(f);
+    return NuevaCopia;
+}
+int EXT::CopiarDirectos(SPB *Super,int Comienzo, const char *PathReal,int Tipo){
+    FILE *f;
+    f=fopen(PathReal,"r+");
+    BCA Carpeta;
+    fseek(f,Comienzo,SEEK_SET);
+    fread(&Carpeta,sizeof(Carpeta),1,f);
+    fclose(f);
+
+    BCA CopiaDir;
+    for(int i=0;i<4;i++){
+        CON Contenido=Carpeta.content[i];
+        if(Contenido.b_inodo!=-1){
+            if(Tipo==0){//Carpeta
+                CopiaDir.content[i].b_inodo=CopiarInodo(Super,Contenido.b_inodo,PathReal);
+                strcpy(CopiaDir.content[i].b_name,Carpeta.content[i].b_name);
+            }else{//Archivo
+                CopiaDir.content[i].b_inodo=CopiarContenido(Super,Contenido.b_inodo,PathReal);
+                strcpy(CopiaDir.content[i].b_name,".....");
+            }
+        }else{
+            CopiaDir.content[i].b_inodo=-1;
+        }
+    }
+
+
+
+    int NuevaCopia=BloqueLibre(Super,PathReal);
+    if(NuevaCopia==-1)
+        return NuevaCopia;
+    f=fopen(PathReal,"r+");
+    fseek(f,NuevaCopia,SEEK_SET);
+    fwrite(&CopiaDir,sizeof(CopiaDir),1,f);
+    fclose(f);
+    return NuevaCopia;
+}
+int EXT::CopiarIndirectos(SPB *Super,int Nivel, int NivelActual, int Comienzo,  const char *PathReal,int Tipo){
+    if(Nivel==NivelActual){
+        return CopiarDirectos(Super,Comienzo,PathReal,Tipo);
+    }
+    FILE *f;
+    f=fopen(PathReal,"r+");
+    BAP Apunta;
+    fseek(f,Comienzo,SEEK_SET);
+    fread(&Apunta,sizeof(Apunta),1,f);
+    fclose(f);
+
+    BAP CopiaPtr;
+
+    for(int i=0;i<16;i++){
+        int Valor=Apunta.b_pointers[i];
+        if(Valor!=-1){
+            CopiaPtr.b_pointers[i]=CopiarIndirectos(Super,Nivel,NivelActual+1,Valor,PathReal,Tipo);
+        }else{
+            CopiaPtr.b_pointers[i]=-1;
+        }
+    }
+
+    int NuevaCopia=BloqueLibre(Super,PathReal);
+    if(NuevaCopia==-1)
+        return NuevaCopia;
+    f=fopen(PathReal,"r+");
+    fseek(f,NuevaCopia,SEEK_SET);
+    fwrite(&CopiaPtr,sizeof(CopiaPtr),1,f);
+    fclose(f);
+    return NuevaCopia;
+
+}
+int EXT::CopiarInodo(SPB *Super,int Comienzo, const char *PathReal){
+    if(TienePermiso(Comienzo,PathReal,"100")==false){
+        return -1;
+    }
+
+
+    FILE *f;
+    f=fopen(PathReal,"r+");
+    INO Carpeta;
+    fseek(f,Comienzo,SEEK_SET);
+    fread(&Carpeta,sizeof(Carpeta),1,f);
+    fclose(f);
+
+    INO CopiaCarpeta;
+    DuplicarInodo(&Carpeta,&CopiaCarpeta);
+    int Tipo=1;
+    if(Carpeta.i_type=='0')
+        Tipo=0;
+    for(int i=0;i<12;i++){
+        int Apuntador=Carpeta.i_block[i];
+        if(Apuntador!=-1){
+            CopiaCarpeta.i_block[i]=CopiarIndirectos(Super,0,0,Apuntador,PathReal,Tipo);
+
+        }else{
+            CopiaCarpeta.i_block[i]=-1;
+        }
+    }
+
+    for(int i=0;i<3;i++){
+        int Apuntador=Carpeta.i_block[i+12];
+        if(Apuntador!=-1){
+            CopiaCarpeta.i_block[i]=CopiarIndirectos(Super,1+i,0,Apuntador,PathReal,Tipo);
+        }else{
+            CopiaCarpeta.i_block[i]=-1;
+        }
+    }
+    int NuevaCopia=InodoLibre(Super,PathReal);
+    if(NuevaCopia==-1)
+        return NuevaCopia;
+    f=fopen(PathReal,"r+");
+    fseek(f,NuevaCopia,SEEK_SET);
+    fwrite(&CopiaCarpeta,sizeof(CopiaCarpeta),1,f);
+    fclose(f);
+    return NuevaCopia;
+}
+void EXT::DuplicarInodo(INO *Original, INO *Copia){
+    Copia->i_gid=Original->i_gid;
+    Copia->i_uid=Original->i_uid;
+    Copia->i_perm=Original->i_perm;
+    Copia->i_size=Original->i_size;
+    Copia->i_type=Original->i_type;
+    Copia->i_atime=Original->i_atime;
+    Copia->i_ctime=Original->i_ctime;
+    Copia->i_mtime=Original->i_mtime;
+}
+//CambiarNombre
+bool EXT::CambiarNombre(int Comienzo, std::string PathVirtual, const char *PathReal,std::string Renombre){
+    int Padre=BuscarPadre(Comienzo,PathVirtual,PathReal);
+    if(Padre==-1){
+        std::cout<<"No Se Encontro Una Carpeta O Archivo En "<<PathVirtual<<" No Se Pudo CambiarPermiso"<<std::endl;
+        return false ;
+    }
+    RenombrarInodo(Padre,PathReal,Renombre,PathVirtual);
+
+    return  true;
+}
+bool EXT::RenombrarDirectos(int Comienzo, const char *PathReal,std::string  Info,std::string  Busqueda){
+    FILE *f;
+    f=fopen(PathReal,"r+");
+    BCA Carpeta;
+    fseek(f,Comienzo,SEEK_SET);
+    fread(&Carpeta,sizeof(Carpeta),1,f);
+    fclose(f);
+    std::string Concatenar="";
+    for(int i=0;i<4;i++){
+        CON Contenido=Carpeta.content[i];
+
+        if(Contenido.b_inodo!=-1){
+            std::string Nama=NombreACrear(Busqueda.data());
+            if(Fun->IF(Contenido.b_name,Nama)){
+
+
+
+
+                if(TienePermiso(Contenido.b_inodo,PathReal,"010")==false){
+                    std::cout<<"No Se Pudo ESCRIBIR El Archivo Ubicado En '"<<Info<<"' La Sesion Actual No Tiene Los Permisos Necesarios "<<std::endl;
+                    return true;
+                }
+
+
+                f=fopen(PathReal,"r+");
+                BCA Carpeta;
+                fseek(f,Comienzo,SEEK_SET);
+                fread(&Carpeta,sizeof(Carpeta),1,f);
+                strcpy(Carpeta.content[i].b_name,(Info).substr(0,12).c_str());
+                fseek(f,Comienzo,SEEK_SET);
+                fwrite(&Carpeta,sizeof(Carpeta),1,f);
+                fclose(f);
+                return true;
+            }
+
+        }
+    }
+    return false;
+}
+bool EXT::RenombrarIndirectos(int Nivel, int NivelActual, int Comienzo,  const char *PathReal,std::string  Info,std::string  Busqueda){
+    if(Nivel==NivelActual){
+        return PermisoDirectos(Comienzo,PathReal);
+    }
+    FILE *f;
+    f=fopen(PathReal,"r+");
+    BAP Apunta;
+    fseek(f,Comienzo,SEEK_SET);
+    fread(&Apunta,sizeof(Apunta),1,f);
+    fclose(f);
+    bool Com=false;
+    for(int i=0;i<16;i++){
+        int Valor=Apunta.b_pointers[i];
+        if(Valor!=-1){
+            Com=RenombrarIndirectos(Nivel,NivelActual+1,Valor,PathReal,Info,Busqueda);
+            if(Com==true)
+                return true;
+        }
+    }
+
+    return false;
+}
+bool EXT::RenombrarInodo(int Comienzo, const char *PathReal,std::string  Info,std::string  Busqueda){
+    FILE *f;
+    f=fopen(PathReal,"r+");
+    INO Carpeta;
+    fseek(f,Comienzo,SEEK_SET);
+    fread(&Carpeta,sizeof(Carpeta),1,f);
+    fclose(f);
+
+    bool Comp=false;
+    for(int i=0;i<12;i++){
+        int Apuntador=Carpeta.i_block[i];
+        if(Apuntador!=-1){
+            Comp=RenombrarIndirectos(0,0,Apuntador,PathReal,Info,Busqueda);
+            if(Comp==true)
+                return true;
+        }
+    }
+
+    for(int i=0;i<3;i++){
+        int Apuntador=Carpeta.i_block[i+12];
+        if(Apuntador!=-1){
+            Comp=RenombrarIndirectos(1+i,0,Apuntador,PathReal,Info,Busqueda);
+            if(Comp==true)
+                return true;
+        }
+    }
+    return false;
+}
+//Busqueda De Carpetas O Archivos
+void EXT::CambiarPermisosNormalRecursivo(int Comienzo, const char *PathVirtual, const char *PathReal,int Ope,int Perm){
+    int Actual=BuscarActual(Comienzo,PathVirtual,PathReal);
+    if(Actual==-1){
+        std::cout<<"No Se Encontro Una Carpeta O Archivo En "<<PathVirtual<<" No Se Pudo CambiarPermiso"<<std::endl;
+        return ;
+    }
+
+
+    FILE *f;
+    f=fopen(PathReal,"r+");
+    INO Carpeta;
+    fseek(f,Actual,SEEK_SET);
+    fread(&Carpeta,sizeof(Carpeta),1,f);
+
+    //Si Es Root o Dueño De la Carpeta
+    if(Permiso.Uid==1 ||Permiso.Gid==1 || Permiso.Uid==Carpeta.i_uid){
+        Carpeta.i_perm=Perm;
+        fseek(f,Actual,SEEK_SET);
+        fwrite(&Carpeta,sizeof(Carpeta),1,f);
+
+    }else{
+        std::cout<<"No Se Pueden Cambiar Los Permisos El Usuario Con Codigo "<<Permiso.Uid<<" No Es El Propietario"<<std::endl;
+        return ;
+    }
+
+    fclose(f);
+
+
+    //Cambiar De Manera Normal
+    if(Ope==1){
+        std::cout<<"Se Cambiaron Los Permisos A Solo Una Carpeta De '"<<PathVirtual<<"' Al Tipo De Permisos: "<<std::to_string(Perm).substr(1)<<std::endl;
+        return ;
+
+    }
+
+    //Es Carpeta
+    if(Carpeta.i_type=='1')
+        return;
+
+    for(int i=0;i<12;i++){
+        int Apuntador=Carpeta.i_block[i];
+        if(Apuntador!=-1){
+            ModificarIndirectos(0,0,Apuntador,PathReal,1,Perm);
+        }
+    }
+
+    for(int i=0;i<3;i++){
+        int Apuntador=Carpeta.i_block[i+12];
+        if(Apuntador!=-1){
+            ModificarIndirectos(1+i,0,Apuntador,PathReal,1,Perm);
+        }
+    }
+
+    std::cout<<"Se Cambiaron Los Permisos De Manera Recursiva De '"<<PathVirtual<<"' Al Tipo De Permisos: "<<std::to_string(Perm).substr(1)<<std::endl;
+}
+
+bool EXT::TienePermiso(int Comienzo, const char *PathReal, std::string Info){   
+    std::string PermisoCarpeta=PermisosEnElPadre(Comienzo,PathReal);
+   if(Fun->IF(PermisoCarpeta,""))
+       return false;
+
+
+
+   for(int i=0;i<3;i++){
+       char Com=PermisoCarpeta.data()[i];
+       char Per=Info.data()[i];
+       if(Per=='1'){
+
+
+           if(Com=='0'){
+
+               return false;
+               }
+       }
+   }
+
+   return true;
+}
+
+std::string EXT::PermisosEnElPadre(int Comienzo, const char *PathReal){
+    FILE *f;
+    f=fopen(PathReal,"r+");
+    INO Carpeta;
+    fseek(f,Comienzo,SEEK_SET);
+    fread(&Carpeta,sizeof(Carpeta),1,f);
+    fclose(f);
+
+    int Selec=3;
+    if(Carpeta.i_uid==Permiso.Uid){
+        Selec=1;
+    }else if(Carpeta.i_gid==Permiso.Gid){
+        Selec=2;
+    }
+
+    if(Permiso.Uid==1 || Permiso.Gid==1)
+        return "111";
+
+    std::string Comparar="";
+
+    std::string Num = std::to_string(Carpeta.i_perm);
+    if(Num.length()==10){
+        switch (Selec) {
+        case 1:{
+            Comparar=Comparar+Num.data()[1]+Num.data()[2]+Num.data()[3];
+            break;
+        }
+        case 2:{
+            Comparar=Comparar+Num.data()[4]+Num.data()[5]+Num.data()[6];
+            break;
+        }
+        case 3:{
+            Comparar=Comparar+Num.data()[7]+Num.data()[8]+Num.data()[9];
+            break;
+        }
+
+        }
+
+    }else
+        std::cout<<"Error En La Particion, Permisos n Leer Correctamente"<<std::endl;
+    return Comparar;
+}
+//Verificar Si Tiene Permisos
+bool EXT::PermisoDirectos(int Comienzo, const char *PathReal){
+    FILE *f;
+    f=fopen(PathReal,"r+");
+    BCA Carpeta;
+    fseek(f,Comienzo,SEEK_SET);
+    fread(&Carpeta,sizeof(Carpeta),1,f);
+    fclose(f);
+    std::string Concatenar="";
+    bool Comp=true;
+    for(int i=0;i<4;i++){
+        CON Contenido=Carpeta.content[i];
+
+        if(Contenido.b_inodo!=-1){
+            Comp=PermisoInodo(Contenido.b_inodo,PathReal);
+            if(Comp==false)
+                return false;
+        }
+    }
+    return true;
+}
+bool EXT::PermisoIndirectos(int Nivel, int NivelActual, int Comienzo,  const char *PathReal){
+    if(Nivel==NivelActual){
+        return PermisoDirectos(Comienzo,PathReal);
+    }
+    FILE *f;
+    f=fopen(PathReal,"r+");
+    BAP Apunta;
+    fseek(f,Comienzo,SEEK_SET);
+    fread(&Apunta,sizeof(Apunta),1,f);
+    fclose(f);
+    bool Com=true;
+    for(int i=0;i<16;i++){
+        int Valor=Apunta.b_pointers[i];
+        if(Valor!=-1){
+            Com=PermisoIndirectos(Nivel,NivelActual+1,Valor,PathReal);
+            if(Com==false)
+                return false;
+        }
+    }
+
+    return true;
+}
+bool EXT::PermisoInodo(int Comienzo, const char *PathReal){
+    FILE *f;
+    f=fopen(PathReal,"r+");
+    INO Carpeta;
+    fseek(f,Comienzo,SEEK_SET);
+    fread(&Carpeta,sizeof(Carpeta),1,f);
+    fclose(f);
+
+    if(TienePermiso(Comienzo,PathReal,"010")==false)
+        return false;
+
+    if(Carpeta.i_type=='1')//Es Carpeta No Hay Mas
+        return true;
+
+    bool Comp=true;
+    for(int i=0;i<12;i++){
+        int Apuntador=Carpeta.i_block[i];
+        if(Apuntador!=-1){
+            Comp=PermisoIndirectos(0,0,Apuntador,PathReal);
+            if(Comp==false)
+                return false;
+        }
+    }
+
+    for(int i=0;i<3;i++){
+        int Apuntador=Carpeta.i_block[i+12];
+        if(Apuntador!=-1){
+            Comp=PermisoIndirectos(1+i,0,Apuntador,PathReal);
+            if(Comp==false)
+                return false;
+        }
+    }
+    return true;
+}
+//Modificar CHMOD
+void EXT::ModificarDirectos(int Comienzo, const char *PathReal, int Tipo,int Perm){
+    FILE *f;
+    f=fopen(PathReal,"r+");
+    BCA Carpeta;
+    fseek(f,Comienzo,SEEK_SET);
+    fread(&Carpeta,sizeof(Carpeta),1,f);
+    fclose(f);
+    std::string Concatenar="";
+    for(int i=0;i<4;i++){
+        CON Contenido=Carpeta.content[i];
+
+        if(Contenido.b_inodo!=-1){
+            ModificarInodo(Contenido.b_inodo,PathReal,Tipo,Perm);
+        }
+    }
+}
+void EXT::ModificarIndirectos(int Nivel, int NivelActual, int Comienzo,  const char *PathReal, int Tipo,int Perm){
+    if(Nivel==NivelActual){
+        return ModificarDirectos(Comienzo,PathReal,Tipo,Perm);
+    }
+    FILE *f;
+    f=fopen(PathReal,"r+");
+    BAP Apunta;
+    fseek(f,Comienzo,SEEK_SET);
+    fread(&Apunta,sizeof(Apunta),1,f);
+    fclose(f);
+    for(int i=0;i<16;i++){
+        int Valor=Apunta.b_pointers[i];
+        if(Valor!=-1){
+            ModificarIndirectos(Nivel,NivelActual+1,Valor,PathReal,Tipo,Perm);
+        }
+    }
+
+}
+//Tipo==1 CHMOD Recursivo
+void EXT::ModificarInodo(int Comienzo, const char *PathReal,int Tipo,int Perm){
+    FILE *f;
+    f=fopen(PathReal,"r+");
+    INO Carpeta;
+    fseek(f,Comienzo,SEEK_SET);
+    fread(&Carpeta,sizeof(Carpeta),1,f);
+
+
+    if(Tipo==1){
+        Carpeta.i_perm=Perm;
+        fseek(f,Comienzo,SEEK_SET);
+        fwrite(&Carpeta,sizeof(Carpeta),1,f);
+    }
+
+
+    fclose(f);
+
+    if(Carpeta.i_type=='1')//Es Carpeta No Hay Mas
+        return;
+
+    for(int i=0;i<12;i++){
+        int Apuntador=Carpeta.i_block[i];
+        if(Apuntador!=-1){
+            ModificarIndirectos(0,0,Apuntador,PathReal,Tipo,Perm);
+        }
+    }
+
+    for(int i=0;i<3;i++){
+        int Apuntador=Carpeta.i_block[i+12];
+        if(Apuntador!=-1){
+            ModificarIndirectos(1+i,0,Apuntador,PathReal,Tipo,Perm);
+        }
+    }
+}
 //Eliminar Archivo
 bool EXT::EliminarArchivoCarpetaPadre(SPB *Super, int Comienzo, const char *PathVirtual, const char *PathReal, int Hijo){
     int Actual=BuscarPadre(Comienzo,PathVirtual,PathReal);
@@ -52,8 +648,11 @@ bool EXT::EliminarArchivoCarpeta(SPB *Super, int Comienzo, const char *PathVirtu
         std::cout<<"No Se Encontro Una Carpeta O Archivo En "<<PathVirtual<<" No Se Pudo Borrar"<<std::endl;
         return false;
     }
-
-
+    bool Permitido=PermisoInodo(Actual,PathReal);
+    if(Permitido==false){
+        std::cout<<"No Tiene Permiso En Todos Los Archivos Y SubCarpetas, No Se Puede Borrar "<<std::endl;
+        return false;
+    }
     FILE *f;
     f=fopen(PathReal,"r+");
     INO Carpeta;
@@ -232,9 +831,15 @@ std::string EXT::LeerArchivo(int Inicio, const char *Disco, const char *Path){
 
 
     if(Busqueda==-1){
-        std::cout<<" No Se Encontro El Archivo"<<std::endl;
+        std::cout<<"No Se Encontro El Archivo"<<std::endl;
         return "";
     }else{
+
+        if(TienePermiso(Busqueda,Disco,"100")==false){
+            std::cout<<"No Se Pudo LEER El Archivo Ubicado En '"<<Path<<"' La Sesion Actual No Tiene Los Permisos Necesarios "<<std::endl;
+            return "";
+        }
+
         //Busqueda El Inodo Del Archivo
         FILE *f;
         f=fopen(Disco,"r+");
@@ -267,6 +872,11 @@ void EXT::ExpandirArchivo(SPB *Super, int Comienzo, const char *PathVirtual, con
     PosArchivo=BuscarActual(Comienzo,PathVirtual,PathReal);
     if(PosArchivo==-1){
         std::cout<<"No Se Pudo Agregar Contenido Al Archivo  en"<<PathVirtual<<" En El Disco  Virtual Ubicado En"<<PathReal<<std::endl;
+        return ;
+    }
+
+    if(TienePermiso(PosArchivo,PathReal,"110")==false){
+        std::cout<<"No Se Pudo LEER El Archivo Ubicado En '"<<PathVirtual<<"' La Sesion Actual No Tiene Los Permisos Necesarios "<<std::endl;
         return ;
     }
 
@@ -509,7 +1119,52 @@ int EXT::BuscarActual(int Comienzo, std::string PathVirtual, const char *PathRea
 }
 //CrearArchivo
 bool EXT::CrearArchivoCompleto(SPB *Super, int Comienzo, const char *PathVirtual, const char *PathReal, std::string Contenido){
+    int PosPadre=0;
+    if(Fun->IF(Contenido,"")){
+        Contenido=Contenido+" ";
+    }
+    //CrearCarpetaCompleto(Super,Comienzo,PathVirtual,PathReal);
+    std::string CarpetaCrear=PathArchivo(PathVirtual);
+    if(CarpetaCrear.length()==0)
+        CarpetaCrear=CarpetaCrear+"/";
 
+    CrearCarpetaCompleto(Super,Comienzo,CarpetaCrear.data(),PathReal);
+
+    std::string NombreArchivo=NombreACrear(PathVirtual);
+    if(CantidadBarras(PathVirtual)==1){
+        PosPadre=Comienzo;
+    }else{
+        PosPadre=BuscarPadre(Comienzo,PathVirtual,PathReal);
+        if(PosPadre==-1){
+            std::cout<<"No Se Pudo Crear El Archivo "<<NombreArchivo  <<" En "<<PathVirtual<<" En El Disco Ubicado En"<<PathReal<<std::endl;
+            return false;
+        }
+    }
+
+    if(!TienePermiso(PosPadre,PathReal,"010")==false){
+        std::cout<<"No Se Pudo Crear El Archivo "<<NombreArchivo  <<" La Sesion Actual No Tiene Los Permisos Necesarios Para La Ruta"<<PathReal<<std::endl;
+        return false;
+    }
+
+    std::string NombreCarpeta=NombreACrear(PathVirtual);
+    FILE *f;
+    f=fopen(PathReal,"r+");
+    INO Inodo;
+    fseek(f,PosPadre,SEEK_SET);
+    fread(&Inodo,sizeof(Inodo),1,f);
+    fclose(f);
+
+    int Num=CarpetaArchivoSimpleDirectos(&Inodo,Super,PosPadre,PathReal,NombreCarpeta,Contenido);
+    if(Num==-2)
+        return false;
+
+    if(Num==1)
+        return true;
+
+    if(CarpetaArchivoSimpleInDirectos(&Inodo,Super,PosPadre,PathReal,PathVirtual,NombreCarpeta,Contenido))
+        return true;
+
+    return false;
 }
 bool EXT::CrearArchivoSimple(SPB *Super, int Comienzo, const char *PathVirtual, const char *PathReal, std::string Contenido){
     int PosPadre=0;
@@ -527,6 +1182,11 @@ bool EXT::CrearArchivoSimple(SPB *Super, int Comienzo, const char *PathVirtual, 
         }
     }
 
+    if(!TienePermiso(PosPadre,PathReal,"010")){
+        std::cout<<"No Se Pudo Crear El Archivo "<<NombreArchivo  <<" La Sesion Actual No Tiene Los Permisos Necesarios Para La Ruta"<<PathReal<<std::endl;
+        return false;
+    }
+
     std::string NombreCarpeta=NombreACrear(PathVirtual);
     FILE *f;
     f=fopen(PathReal,"r+");
@@ -534,11 +1194,14 @@ bool EXT::CrearArchivoSimple(SPB *Super, int Comienzo, const char *PathVirtual, 
     fseek(f,PosPadre,SEEK_SET);
     fread(&Inodo,sizeof(Inodo),1,f);
     fclose(f);
-
-    if(CarpetaArchivoSimpleDirectos(&Inodo,Super,PosPadre,PathReal,NombreCarpeta,Contenido))
+    int Num;
+    Num=CarpetaArchivoSimpleDirectos(&Inodo,Super,PosPadre,PathReal,NombreCarpeta,Contenido);
+    if(Num==1)
         return true;
+    if(Num==-2)
+        return false;
 
-    if(CarpetaArchivoSimpleInDirectos(&Inodo,Super,PosPadre,PathReal,PathVirtual,NombreCarpeta,Contenido))
+    if(CarpetaArchivoSimpleInDirectos(&Inodo,Super,PosPadre,PathReal,PathVirtual,NombreCarpeta,Contenido)==1)
         return true;
 
     return false;
@@ -638,18 +1301,26 @@ int EXT::BuscarInodos(int Comienzo, std::string PathVirtual, const char *PathRea
 
 
 
-    if(Inodo.i_type=='1'){
 
-        return Comienzo;
-    }
     if(Contador==0){
         return Comienzo;
     }
 
+    if(Inodo.i_type=='1'){
+
+        return Comienzo;
+    }
     for(int i=0;i<12;i++){
         int Comprobar=Inodo.i_block[i];
+
+
+
         if(Comprobar!=-1){
             Comprobar =BuscarIndirectos(nullptr,0,0,Comprobar,PathVirtual,PathReal,1);
+
+            if(Comprobar==-2)
+                return -2;
+
             if(Comprobar!=-1){
                 //Es El Padre El Inodo Actual
                 if(Comprobar==1)
@@ -663,9 +1334,12 @@ int EXT::BuscarInodos(int Comienzo, std::string PathVirtual, const char *PathRea
 
 
     for(int i=0;i<3;i++){
+        int Busq=BuscarIndirectos(nullptr,1+i,0,Inodo.i_block[12+i],PathVirtual,PathReal,1);
+        if(Busq==-2)
+            return -2;
 
-    if(BuscarIndirectos(nullptr,1+i,0,Inodo.i_block[12+i],PathVirtual,PathReal,1)!=-1)
-        return Comienzo;
+        if(Busq!=-1)
+            return Comienzo;
     }
 
     return -1;
@@ -698,7 +1372,14 @@ int EXT::BuscarDirectos(int Comienzo, std::string PathVirtual, const char *PathR
             }
 
             if(Fun->IF(Nombre,NombreActual) && Contenido.b_inodo!=-1){
-                return BuscarInodos(Contenido.b_inodo,NombreTotal,PathReal);
+                int Busq=BuscarInodos(Contenido.b_inodo,NombreTotal,PathReal);
+                if(Busq==-1 || Busq==-2){
+
+                    return -2;
+
+                }
+
+                return Busq;
             }
         }else if(Tipo==2)
             //Tipo 2 Pra Posocion Del Bloque Directo, Al crear Carpetas
@@ -739,6 +1420,10 @@ int EXT::BuscarIndirectos(SPB *Super,int Nivel, int NivelActual, int Comienzo, s
         int Valor=Apunta.b_pointers[i];
         if(Valor!=-1){
             Valor=BuscarIndirectos(Super,Nivel,NivelActual+1,Valor,PathVirtual,PathReal,Tipo);
+            if(Valor==-2){
+                return -2;
+            }
+
             if(Valor!=-1){
                 return Valor;
             }
@@ -790,8 +1475,31 @@ int EXT::CrearIndirectos(int Nivel, int NivelActual, SPB *Super, const char *Pat
 
 }
 int EXT::BuscarPadre(int Comienzo, std::string PathVirtual, const char *PathReal){
-    return BuscarInodos(Comienzo,PathVirtual,PathReal);
+    int Num=BuscarInodos(Comienzo,PathVirtual,PathReal);
+    if(Num==-2){
+        std::cout<<"OPTI"<<std::endl;
+        return-1;
+    }
+    return Num;
 
+}
+std::string EXT::PathArchivo(const char *PathVirtual){
+    std::string s = PathVirtual;
+    std::string delimiter = "/";
+    size_t pos = 0;
+    std::string token;
+    std::string Escritura="";
+    while ((pos = s.find(delimiter)) != std::string::npos) {
+        token = s.substr(0, pos);
+        if(this->Fun->IF("",token)){
+
+        }else{
+        Escritura=Escritura+"/"+token;
+        }
+        s.erase(0, pos + delimiter.length());
+    }
+
+    return Escritura;
 }
 std::string EXT::NombreACrear(const char *PathVirtual){
     std::string s = PathVirtual;
@@ -812,8 +1520,28 @@ std::string EXT::NombreACrear(const char *PathVirtual){
     return s;
 }
 //Crear CarpetasYArchivos
-bool EXT::CarpetaArchivoSimpleDirectos(INO *Ino,SPB *Super,int PosPadre, const char *PathReal ,std::string NombreCarpeta,std::string Contenido){
-    INO Inodo=*Ino;
+int EXT::CarpetaArchivoSimpleDirectos(INO *Ino,SPB *Super,int PosPadre, const char *PathReal ,std::string NombreCarpeta,std::string Contenido){
+    INO Inodo=*Ino;    
+    FILE *f;
+    f=fopen(PathReal,"r+");
+    BCA BloqueDirecto;
+
+
+    for(int i=0;i<12;i++){
+        int Pos=Inodo.i_block[i];
+        fseek(f,Pos,SEEK_SET);
+        fread(&BloqueDirecto,sizeof (BloqueDirecto),1,f);
+            for(int j=0;j<4;j++){
+                CON Con=BloqueDirecto.content[j];
+                if(Fun->IF(NombreCarpeta,Con.b_name)){
+                    fclose(f);
+                    return -2;
+                }
+            }
+
+
+    }
+    fclose(f);
     for(int i=0;i<12;i++){
         int Pos=Inodo.i_block[i];
 
@@ -824,7 +1552,7 @@ bool EXT::CarpetaArchivoSimpleDirectos(INO *Ino,SPB *Super,int PosPadre, const c
 
             if(EspacioBloque==-1){
                 std::cout<<"No Se Pudo Crear El Bloque, Insuficiente Tamanio"<<std::endl;
-                return false;
+                return -1;
             }
             FILE *f;
             f=fopen(PathReal,"r+");
@@ -845,7 +1573,7 @@ bool EXT::CarpetaArchivoSimpleDirectos(INO *Ino,SPB *Super,int PosPadre, const c
 
 
             if(Colocacion!=-1)
-                return true;
+                return 1;
 
         }else{
             //Como Posicion Es Valida Se Prueba Colocar Carpeta
@@ -858,13 +1586,13 @@ bool EXT::CarpetaArchivoSimpleDirectos(INO *Ino,SPB *Super,int PosPadre, const c
 
             if(Valor!=-1){
                 //Se Creo La Carpeta
-                return true;
+                return 1;
             }
         }
     }
-    return false;
+    return -1;
 }
-bool EXT::CarpetaArchivoSimpleInDirectos(INO *Ino, SPB *Super, int PosPadre, const char *PathReal,const char *PathVirtual, std::string NombreCarpeta,std::string Contenido){
+int EXT::CarpetaArchivoSimpleInDirectos(INO *Ino, SPB *Super, int PosPadre, const char *PathReal,const char *PathVirtual, std::string NombreCarpeta,std::string Contenido){
     INO Inodo=*Ino;
     //Posicion De Un Bloque De Directos Con Alguna Ranura
     for(int i=0;i<3;i++){
@@ -872,10 +1600,10 @@ bool EXT::CarpetaArchivoSimpleInDirectos(INO *Ino, SPB *Super, int PosPadre, con
         if(Pos==-1){
             //Se Crean Los Bloques Indirectos
             Pos=CrearIndirectos(i+1,0,Super,PathReal);
-            if(Pos!=-1 && Pos!=0){
+            if(Pos==-1 || Pos==0){
                 //Si No Se Puede Crear Retornar
-                std::cout<<"Cancelando POR NO PODER CREAR INDIRECTO"<<std::endl;
-                return false;
+                std::cout<<"Cancelando POR NO PODER CREAR INDIRECTO "<<Pos<<std::endl;
+                return -1;
             }else{
                 Inodo.i_block[12+i]=Pos;
                 //Escribir Inodo Modificado
@@ -898,15 +1626,19 @@ bool EXT::CarpetaArchivoSimpleInDirectos(INO *Ino, SPB *Super, int PosPadre, con
             Valor=ColocarArchivo(NombreCarpeta,Pos,Super,PathReal,Contenido);
             if(Valor!=-1){
                 //Se Creo La Carpeta
-                return true;
+                return 1;
             }
         }
 
     }
-    return false;
+    return -1;
 }
 //CarpetaSimple
 bool EXT::CrearCarpetaSimple(SPB *Super,int Comienzo, const char *PathVirtual, const char *PathReal){
+    /*if(BuscarActual(Comienzo,PathVirtual,PathReal)!=-1)
+        return true;
+*/
+
     int PosPadre=0;
     if(CantidadBarras(PathVirtual)==1){
         PosPadre=Comienzo;
@@ -917,6 +1649,12 @@ bool EXT::CrearCarpetaSimple(SPB *Super,int Comienzo, const char *PathVirtual, c
             return false;
         }
     }
+
+    if(TienePermiso(PosPadre,PathReal,"010")==false){
+        std::cout<<"No Se Tiene Permisos Para ESCRIBIR En la Carpeta Padre En '"<<PathVirtual<<"' La Sesion Actual No Tiene Los Permisos Necesarios "<<std::endl;
+        return false;
+    }
+
     std::string NombreCarpeta=NombreACrear(PathVirtual);
     FILE *f;
     f=fopen(PathReal,"r+");
@@ -924,11 +1662,13 @@ bool EXT::CrearCarpetaSimple(SPB *Super,int Comienzo, const char *PathVirtual, c
     fseek(f,PosPadre,SEEK_SET);
     fread(&Inodo,sizeof(Inodo),1,f);
     fclose(f);
-
-    if(CarpetaArchivoSimpleDirectos(&Inodo,Super,PosPadre,PathReal,NombreCarpeta,""))
+    int Num=CarpetaArchivoSimpleDirectos(&Inodo,Super,PosPadre,PathReal,NombreCarpeta,"");
+    if(Num==1)
         return true;
+    if(Num==-2)
+        return false;
 
-    if(CarpetaArchivoSimpleInDirectos(&Inodo,Super,PosPadre,PathReal,PathVirtual,NombreCarpeta,""))
+    if(CarpetaArchivoSimpleInDirectos(&Inodo,Super,PosPadre,PathReal,PathVirtual,NombreCarpeta,"")==1)
         return true;
     return false;
 }
@@ -938,19 +1678,24 @@ bool EXT::CrearCarpetaCompleto(SPB *Super,int Comienzo, const char *PathVirtual,
     std::string delimiter = "/";
     size_t pos = 0;
     std::string token;
-    std::string Escritura="";
+    std::string Escritura="";   
     while ((pos = s.find(delimiter)) != std::string::npos) {
         token = s.substr(0, pos);
         if(this->Fun->IF("",token)){
 
         }else{
         Escritura=Escritura+"/"+token;
-        CrearCarpetaSimple(Super,Comienzo,Escritura.data(),PathReal);
+                if(BuscarActual(Comienzo,Escritura.data(),PathReal)==-1){
+
+                    CrearCarpetaSimple(Super,Comienzo,Escritura.data(),PathReal);
+                }
         }
         s.erase(0, pos + delimiter.length());
     }
     Escritura=Escritura+"/"+s;
     CrearCarpetaSimple(Super,Comienzo,Escritura.data(),PathReal);
+
+    return true;
 }
 //ColocarCarpetaEnElBloque
 int EXT::ColocarCarpeta(std::string NombreCarpeta,int PosDirecto, SPB *Super, const char *PathReal){
@@ -1194,7 +1939,7 @@ void EXT::IniciarInodo(INO *Inodo, int i_uid, int i_gid, int i_size, int PrimerB
         Inodo->i_block[i]=-1;
     }
     Inodo->i_type=Tipo;
-    Inodo->i_perm=Perm;
+    Inodo->i_perm=2110110010;
 }
 
 void EXT::EstructurarFormatoEXT3(int ComienzoParticion, int TamanioParticion, int TamanioStruct, std::string Direcc){
@@ -1228,7 +1973,8 @@ void EXT::LlenarVacio(int Begin, int Size, char Character,const char *Path){
     }
     fclose(f);
 }
-EXT::EXT()
+EXT::EXT(IUG Permiso)
 {
+ this->Permiso=Permiso;
  Fun=new Functions();
 }

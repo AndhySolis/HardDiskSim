@@ -16,6 +16,9 @@
 class Menu
 {
 public:
+    //CHMOD
+    //Tipo 1=Normal  Tipo 2=Recursivo
+    void CHMOD(const char *PathVirtual,int Ugo,int Tipo);
     //MKUSR
     void MKUSR(const char *USR,const char *Pwd,const char *Grp);
     //RMUSRT
