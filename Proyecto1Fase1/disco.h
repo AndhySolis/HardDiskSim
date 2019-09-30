@@ -1,11 +1,29 @@
 #ifndef DISCO_H
 #define DISCO_H
 #include <QList>
+#include <queue>
+#include "structsext.h"
 #include "structs.h"
 #include "functions.h"
 class Disco
 {
 public:
+    //CHOWN
+    void  PropietarioArchivoParticion(const char *Nombre,const char *Path,int Tipo,int Perm,IUG Permiso);
+    //Recovery
+    std::queue<JOR> RecuperarInformacion(const char *Nombre);
+    std::queue<JOR> Recuperar(int Comienzo,const char*Path);
+    //LOSS
+    void FillDisk(int Begin, int Size, char Character,const char *Path);
+    void PerderInformacion(const char *Nombre);
+    //FIND
+    void BuscarArchivoParticion(const char *Nombre,const char *PathBase,const char *NombreBusqueda,IUG Permiso);
+    //CP
+    void  CopiarArchivoParticion(const char *Nombre,const char *PathOrigen,const char *PathDestino,IUG Permiso);
+    //MV
+    void  MoverArchivoParticion(const char *Nombre,const char *PathOrigen,const char *PathDestino,IUG Permiso);
+    //REN
+    void  RenombrarArchivoParticion(const char *Nombre,const char *NuevoNombre,const char *Path,IUG Permiso);
     //CHMOD
     void  PermisoArchivoParticion(const char *Nombre,const char *Path,int Tipo,int Perm,IUG Permiso);
     //REM
@@ -19,7 +37,7 @@ public:
     //MKDIR
     void CrearCarpetaParticion(const char *Nombre,const char *Path, char Padre,IUG Permiso);
     //FDISK
-    void FormatearParticion(const char *Nombre,int Tipo,IUG Permiso);
+    void FormatearParticion(const char *Nombre,IUG Permiso,int Tipo);
     //---------------------------------FASE1
 
 

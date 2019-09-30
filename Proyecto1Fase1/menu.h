@@ -16,6 +16,24 @@
 class Menu
 {
 public:
+    //Loss
+    void Loss(std::string IDMontado);
+    //Recovery
+    void Recuperar(std::string IDMontado);
+    void SubRecuperar(std::queue<JOR> Cola);
+    //CP
+    void CP(const char *PathOrigen,const char *PathDestino);
+    //MV
+    void MV(const char *PathOrigen,const char *PathDestino);
+    //FIND
+    void FIND(const char *PathVirtual,const char *Nombre);
+    //CHGRP
+    void CHGRP(const char *Usr,const char *NuevoGrupo);
+    //CHOWN
+    //Tipo 1=Normal  Tipo 2=Recursivo
+    void CHOWN(const char *PathVirtual,std::string NuevoDuenio,int Tipo);
+    //REN
+    void REN(const char *PathVirtual,const char *NuevoNombre);
     //CHMOD
     //Tipo 1=Normal  Tipo 2=Recursivo
     void CHMOD(const char *PathVirtual,int Ugo,int Tipo);
@@ -42,7 +60,7 @@ public:
     //MKDIR
     void MKDIR(const char *Path, char Padre);
     //MKFS
-    void MKFS(const char *Id,const char *Type,int EXT);
+    void MKFS(const char *Id,const char *Type,int Tipo);
     //REP
     void REP(const char *Id,const char *Name,const char *Path);
     //AGREGAR
@@ -51,13 +69,14 @@ public:
     void UNMOUNT(const char *Name);
     void MOUNT(const char *Path,const char *Name);
     //RMDISK
-        void RMDISK(const char *Path);
+    void RMDISK(const char *Path);
     //MKDsik
     void Mkdisk(int Size,const char Fit[2],char Unit,const char *Path);
     //FDisk
     void FDisk(int Size,const char Fit[2],char Unit,const char *Path,char Type,const char *Name);
     void FDISKDelete(const char *Delete,const char *Path,const char *Name);
     //Menu
+
     Menu();
 private:
     bool DisponibleBorrarParticionMontada(const char *Id);

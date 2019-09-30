@@ -1,5 +1,32 @@
 #include "operacionusuario.h"
+std::string OperacionUsuario::CambiarGrupo(std::string Usr, std::string Gru){
+    std::string Retorno="";
+    int Longitud=SistemaUsuario->length();
+    USU Usuario;
+    for (int i=0;i<Longitud;i++) {
+        Usuario=SistemaUsuario->at(i);
+        if(Fun->IFEspecial(Usuario.Usuario,Usr)){
+            if(Usuario.Uid!=0){
+                USU Cambio;
+                Cambio.Tipo=Usuario.Tipo;
+                GRU Gr=BuscarGrupo(Gru);
+                if(Gr.Gid==-1){
+                    std::cout<<"No Se Encontro Grupo "+Gru<<std::endl;
+                    break;
+                }
+                Cambio.Grupo=&Gr;
+                Cambio.Uid=Usuario.Uid;
+                Cambio.Usuario=Usuario.Usuario;
+                Cambio.Contrasenia=Usuario.Contrasenia;
+                SistemaUsuario->replace(i,Cambio);
+                break;
+            }
+        }
+    }
+    Retorno=Retorno+StrGrupo()+StrUsuario();
 
+    return Retorno;
+}
 std::string OperacionUsuario::RemoverUsuario(std::string Usr){
     std::string Retorno="";
     int Longitud=SistemaUsuario->length();
@@ -241,6 +268,10 @@ bool OperacionUsuario::UsuarioActualEsRoot(){
         return true;
     else
         return false;
+}
+int OperacionUsuario::Uid(std::string Busqueda){
+    USU Info=BuscarUsuario(Busqueda);
+    return Info.Uid;
 }
 GRU OperacionUsuario::BuscarGrupo(std::string Nombre){
     int Longitud=SistemaGrupo->length();

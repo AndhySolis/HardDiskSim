@@ -1,6 +1,8 @@
 %{
 #include "scanner.h"//se importa el header del analisis sintactico
-
+#include <string>
+#include <stdlib.h>
+#include <stdio.h>
 #include <iostream> //libreria para imprimir en cosola de C
 #include <QString> //libreria para manejo de STRINGS de QT
 #include "sistema.h"
@@ -70,18 +72,96 @@ struct STRREPORTE{
 	bool BId=false;		
 };
 
+struct STRSEXT{
+	std::string Id;
+	std::string Type; 
+};
+struct STRSINGRE{ 
+	std::string Usr;
+	std::string Pwd;
+	std::string Id;
+};
+struct STRSUSR{ 
+	std::string Usr;
+	std::string Pwd;
+	std::string Grp;
+};
+struct STRSPER{
+	std::string Path;
+	std::string Ugo;
+	std::string R; 
+};
+struct STRSARCH{
+	std::string Path;
+	std::string P;
+	std::string Size;
+	std::string Cont;   
+};
+struct STRSEDIT{
+	std::string Path;
+	std::string Cont;   
+};
+struct STRSREN{
+	std::string Path;
+	std::string Name;  
+};
+struct STRSDIR{
+	std::string Path;
+	std::string P;  
+};
+struct STRSCOP{
+	std::string Path;
+	std::string Dest;   
+};
+struct STRSMOV{
+	std::string Path;
+	std::string Dest; 
+};
+struct STRSFIN{
+	std::string Path;
+	std::string Name; 
+};
+struct STRSCHOW{
+	std::string Path;
+	std::string R;
+	std::string Usr; 
+};
+struct STRSCHG{
+	std::string Usr;
+	std::string Grp; 
+};
+
+struct STRDITA{
+	std::string Concatenar;
+};
 
 %}
 //error-verbose si se especifica la opcion los errores sintacticos son especificados por BISON
 %error-verbose
 
 %union{
+
 //se especifican los tipo de valores para los no terminales y lo terminales
 char TEXT [256];
+struct STRDITA *TEXT2 ;
 struct STRCREAR   *SCREAR;
 struct STRFORMATO *SFORMA;
 struct STRMONTAR  *SMONTA;
 struct STRREPORTE *SREPOR;
+//FASE2
+struct STRSEXT* SEXT;
+struct STRSINGRE* SINGRE;
+struct STRSUSR* SUSR;
+struct STRSPER* SPER;
+struct STRSARCH* SARCH;
+struct STRSEDIT* SEDIT;
+struct STRSREN* SREN;
+struct STRSDIR* SDIR;
+struct STRSCOP* SCOP;
+struct STRSMOV* SMOV;
+struct STRSFIN* SFIN;
+struct STRSCHOW* SCHOW;
+struct STRSCHG* SCHG;
 }
 
 /*No terimanesl*/
@@ -96,7 +176,33 @@ struct STRREPORTE *SREPOR;
 %type<TEXT> TERMIIDENTI;
 %type<TEXT> EJECUTAR;
 %type<SREPOR> REPORTES;
+//FASE2
+%type<SEXT> EXT3;
+%type<SINGRE> INGRE;
+%type<TEXT> SALIR;
+%type<TEXT> HACERGRUPO;
+%type<TEXT> BORRARGRUPO;
+%type<SUSR> HACERUSUARIO;
+%type<TEXT> BORRARUSUARIO;
+%type<SPER> PERMISO;
+%type<SARCH> NUEVOARCHIVO;
+%type<TEXT> VERCONTE;
+%type<TEXT> REMOVER;
+%type<SEDIT> EDITARCHIVO;
+%type<SREN> RENOMBRAR;
+%type<SDIR> NUEVACARPETA;
+%type<SCOP> COPIAR;
+%type<SMOV> MOVER;
+%type<SFIN> FIN;
+%type<SCHOW> CAMBIARPROP;
+%type<SCHG> CAMBIARGRUPO;
+%type<TEXT> PAUSA;
+%type<TEXT> RECUPERAR;
+%type<TEXT> MATAR;
+%type<TEXT2> TERMIMUC;
+%type<TEXT2> MUCHO;
 //TERMINALES DE TIPO TEXT, SON STRINGS
+
 %token<TEXT> entero;
 %token<TEXT> cadena;
 %token<TEXT> identificador;
@@ -121,13 +227,149 @@ struct STRREPORTE *SREPOR;
 %token<TEXT> name;
 %token<TEXT> add;
 %token<TEXT> id;
-
-
+//FASE2
+%token<TEXT> fs;
+%token<TEXT> dest;
+%token<TEXT> usr;
+%token<TEXT> pwd;
+%token<TEXT> logout;
+%token<TEXT> login;
+%token<TEXT> mkfs;
+%token<TEXT> mkgrp;
+%token<TEXT> rmgrp;
+%token<TEXT> grp;
+%token<TEXT> mkusr;
+%token<TEXT> rmusr;
+%token<TEXT> chmodp;
+%token<TEXT> ugo;
+%token<TEXT> r;
+%token<TEXT> p;
+%token<TEXT> cont;
+%token<TEXT> mkfile;
+%token<TEXT> cat;
+%token<TEXT> file;
+%token<TEXT> rem;
+%token<TEXT> edit;
+%token<TEXT> ren;
+%token<TEXT> mkdirp;
+%token<TEXT> cp;
+%token<TEXT> mv;
+%token<TEXT> find;
+%token<TEXT> chownp;
+%token<TEXT> chgrp;
+%token<TEXT> pausep;
+%token<TEXT> recovery;
+%token<TEXT> loss;
 
 
 %start PROGRAMA
 %%
+TERMIIDENTI:identificador{std::copy(std::begin($1), std::end($1), std::begin($$));}
+	|cadena{std::string Tempo=$1; Tempo=Tempo.substr(1,Tempo.length()-1); strcpy($$,Tempo.c_str());}
+;
 
+
+TERMIMUC:TERMIMUC MUCHO{($1->Concatenar)=($1->Concatenar)+($2->Concatenar); $$=$1;}
+	|MUCHO {$$=$1;}
+;
+MUCHO:id{STRDITA *Temp = new STRDITA(); Temp->Concatenar=$1;$$=Temp;}
+	|entero{STRDITA *Temp = new STRDITA(); Temp->Concatenar=$1; $$=Temp;}
+;
+MATAR: loss igual TERMIIDENTI{}
+;
+
+RECUPERAR: recovery igual TERMIIDENTI{}
+;
+
+PAUSA:pausep{}
+;
+
+CAMBIARGRUPO:CAMBIARGRUPO grp igual TERMIIDENTI{$1->Grp=$4; $$=$1;}
+    |CAMBIARGRUPO usr igual TERMIIDENTI{$1->Usr=$4; $$=$1;}
+    |chgrp{$$= new STRSCHG();}
+;
+
+CAMBIARPROP:CAMBIARPROP r igual TERMIIDENTI{$1->R=$4; $$=$1;}
+    |CAMBIARPROP usr igual TERMIIDENTI{$1->Usr=$4; $$=$1;}
+    |CAMBIARPROP path igual TERMIDIRECC{$1->Path=$4; $$=$1;}
+    |chownp{$$= new STRSCHOW();}
+;
+
+FIN:FIN name igual TERMIIDENTI{$1->Name=$4; $$=$1;}
+    |FIN path igual TERMIDIRECC{$1->Path=$4; $$=$1;}
+    |find{$$=new STRSFIN();}
+;
+
+MOVER:MOVER dest igual TERMIDIRECC{$1->Dest=$4; $$=$1;}
+    |MOVER path igual TERMIDIRECC{$1->Path=$4; $$=$1;}
+    |mv {$$=new STRSMOV();}
+;
+
+COPIAR:COPIAR dest igual TERMIDIRECC{$1->Dest=$4; $$=$1;}
+    |COPIAR path igual TERMIDIRECC{$1->Path=$4; $$=$1;}
+    |cp {$$=new STRSCOP();}
+;
+
+NUEVACARPETA:NUEVACARPETA p igual TERMIIDENTI{$1->P=$4; $$=$1;}
+    |NUEVACARPETA path igual TERMIDIRECC{$1->Path=$4; $$=$1;}
+    |mkdirp{$$= new STRSDIR();}
+;
+
+RENOMBRAR:RENOMBRAR name igual TERMIIDENTI{$1->Name=$4; $$=$1;}
+    |RENOMBRAR path igual TERMIDIRECC{$1->Path=$4; $$=$1;}
+    |ren{$$= new STRSREN();}
+;
+
+EDITARCHIVO:EDITARCHIVO path igual TERMIDIRECC{$1->Path=$4; $$=$1;}
+    |EDITARCHIVO cont igual TERMIMUC{$1->Cont=$4->Concatenar; $$=$1;}
+    |edit{$$= new STRSEDIT();}
+;
+
+REMOVER:rem path igual TERMIDIRECC{}
+;
+
+VERCONTE: cat file igual TERMIDIRECC {}
+;
+
+NUEVOARCHIVO:NUEVOARCHIVO path igual TERMIDIRECC {$1->Path=$4; $$=$1;}
+    |NUEVOARCHIVO p igual TERMIIDENTI {$1->P=$4; $$=$1;}
+    |NUEVOARCHIVO size igual TERMIIDENTI {$1->Size=$4; $$=$1;}
+    |NUEVOARCHIVO cont igual TERMIDIRECC {$1->Cont=$4; $$=$1;}
+    |mkfile{$$=new STRSARCH();}
+;
+
+PERMISO:PERMISO path igual TERMIDIRECC{$1->Path=$4; $$=$1;}
+    |PERMISO ugo igual TERMIIDENTI{$1->Ugo=$4; $$=$1;}
+    |PERMISO r igual TERMIIDENTI{$1->R=$4; $$=$1;}
+    |chmodp{$$ = new STRSPER();}
+;
+
+BORRARUSUARIO: rmusr usr igual TERMIIDENTI{}
+;
+
+HACERUSUARIO:HACERUSUARIO pwd igual TERMIIDENTI{$1->Pwd=$4; $$=$1;}
+    |HACERUSUARIO grp igual TERMIIDENTI{$1->Grp=$4; $$=$1;}
+    |HACERUSUARIO usr igual TERMIIDENTI{$1->Usr=$4; $$=$1;}
+    |mkusr{$$ = new STRSUSR();}
+;
+BORRARGRUPO: rmgrp name igual TERMIIDENTI{}
+;
+HACERGRUPO: mkgrp name igual TERMIIDENTI{}
+;
+
+SALIR: logout{}
+;
+
+INGRE:INGRE usr igual TERMIIDENTI{$1->Usr=$4; $$=$1;}
+	|INGRE pwd igual TERMIIDENTI{$1->Pwd=$4; $$=$1;}
+	|INGRE id igual TERMIIDENTI{$1->Id=$4; $$=$1;}
+	|login{$$= new STRSINGRE();}
+;
+EXT3:EXT3 id igual TERMIIDENTI{$1->Id=$4; $$=$1;}
+	|EXT3 typep igual TERMIIDENTI{$1->Type=$4; $$=$1;}
+	|EXT3 fs{}
+	|mkfs{$$= new STRSEXT();}
+;	
 
 PROGRAMA: PROGRAMA OPCION {}
 	|OPCION{}
@@ -167,6 +409,34 @@ OPCION:CREAR {  if($1->BSize && $1->BUnit && $1->BPath){Ope->Crear($1->Size,$1->
 
 	}
 	|EJECUTAR {/*Desde Produ*/}
+
+
+	|EXT3{}
+    |INGRE{}
+    |SALIR{}
+    |HACERGRUPO{}
+    |BORRARGRUPO{}
+    |HACERUSUARIO{}
+    |BORRARUSUARIO{}
+    |PERMISO{}
+    |NUEVOARCHIVO{}
+    |VERCONTE{}
+    |REMOVER{}
+    |EDITARCHIVO{}
+    |RENOMBRAR{}
+    |NUEVACARPETA{}
+    |COPIAR{}
+    |MOVER{}
+    |FIN{}
+    |CAMBIARPROP{}
+    |CAMBIARGRUPO{}
+    |PAUSA{}
+    |RECUPERAR{}
+    |MATAR{}
+
+
+
+
 ;
 
 CREAR:CREAR size igual entero{$$=$1; $$->Size=atoi($4); $$->BSize=true;  }
@@ -179,7 +449,7 @@ BORRAR: rmdisk path igual TERMIDIRECC{Ope->BorrarDisco(toString($4));}
 ;
 
 TERMIDIRECC:direccion{std::copy(std::begin($1), std::end($1), std::begin($$));}
-	|cadena{std::copy(std::begin($1), std::end($1), std::begin($$));}
+	|cadena{std::string Tempo=$1; Tempo=Tempo.substr(1,Tempo.length()-1); strcpy($$,Tempo.c_str());}
 ;
 
 
@@ -194,9 +464,7 @@ FORMATO:FORMATO size igual entero{$$=$1; $$->Size=atoi($4); $$->BSize=true; 	if(
 	|fdisk{$$= new STRFORMATO();} 	
 ;
 
-TERMIIDENTI:identificador{std::copy(std::begin($1), std::end($1), std::begin($$));}
-	|cadena{std::copy(std::begin($1), std::end($1), std::begin($$));}
-;
+
 
 MONTAR:MONTAR path igual TERMIDIRECC{$$=$1;  $$->Path=toString($4);   $$->BPath=true; }
 	|MONTAR name igual TERMIIDENTI{$$=$1;  $$->BName=true; $$->Name=toString($4);}

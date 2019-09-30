@@ -22,6 +22,7 @@ SOURCES += \
     menu.cpp \
     operacionusuario.cpp \
     parser.cpp \
+    recuperacion.cpp \
     reports.cpp \
     scanner.cpp \
     sistema.cpp
@@ -38,6 +39,7 @@ HEADERS += \
     menu.h \
     operacionusuario.h \
     parser.h \
+    recuperacion.h \
     reports.h \
     scanner.h \
     sistema.h \

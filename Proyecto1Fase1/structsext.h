@@ -1,6 +1,7 @@
 #ifndef STRUCTSEXT_H
 #define STRUCTSEXT_H
 #include <time.h>
+#include "structs.h"
 struct  Inodo{
 
 };
@@ -48,7 +49,14 @@ typedef struct  BloqueArchivos{
 }BAR;
 
 typedef struct  Journaling{
-    int b_pointers[50];
+    int Siguiente;
+    char Direccion[128];
+    char Contenido[128];
+    int UbicacionArchivo;
+    int TamanioArchivo;
+    IUG Info;
+    int Tipo;
+    bool Recursivo;
 }JOR;
 typedef struct  BloqueApuntadores{
     int b_pointers[16];

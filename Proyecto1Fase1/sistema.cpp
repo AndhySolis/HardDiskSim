@@ -20,28 +20,37 @@
 
 extern int yyrestart( FILE* archivo);//METODO QUE PASA EL ARCHIVO A FLEX
 extern int yyparse();
+//FASE 2
+void Sistema::MKFS(std::string Ejecutar, std::string Type){
+    std::cout<<"--------------MKFS---------------"<<std::endl;
+    M->MKFS(Ejecutar.data(),Type.data(),1);
+    std::cout<<"-----------------------------------"<<std::endl;
+}
+//FASE 1
 void Sistema::CrearDirectorio(std::string Conte){
-    std::cout<<"CREAR DIRECTORIO DESACTIVADO WINDOWS, PROBLEMA CON CREAR CARPETAS  ESTA ELIMINADO"<<std::endl;
     std::string s = Conte;
     std::string delimiter = "/";
     size_t pos = 0;
     std::string token;
+
     std::string Escritura="";
     while ((pos = s.find(delimiter)) != std::string::npos) {
         token = s.substr(0, pos);
         if(this->Func->IF("",token)){
 
         }else{
-        Escritura=Escritura+"/"+token;
+            Escritura=Escritura+"/"+token;
+
+            if (mkdir(Escritura.data(), 0777) == -1){
+
+            }
+            else{
+                std::cout <<" Directorio: "<<Escritura<<" No Existia Fue Creado"<<std::endl;
+            }
         }
         s.erase(0, pos + delimiter.length());
     }
-   /* if (mkdir(Escritura.data(), 0777) == -1){
 
-    }*/
-    /*else{
-        std::cout <<" Directorio: "<<Escritura<<"No Existia Fue Creado"<<std::endl;
-    }*/
 
 }
 std::string Sistema::SplitRaid(std::string Conte){
@@ -61,7 +70,7 @@ std::string Sistema::SplitRaid(std::string Conte){
 void Sistema::Ejecutar(std::string  Ejecutar){
     std::cout<<"--------------EXEC---------------"<<std::endl;
     if(Func->ExisteArchivo(Ejecutar.data())==false){
-        std::cout<<"No Existe Un Disco En La Ubicacion "<<Ejecutar<<std::endl;
+        std::cout<<"No Existe Un Archivo En La Ubicacion "<<Ejecutar<<std::endl;
         return;
     }else{
         const char* x = Ejecutar.data();

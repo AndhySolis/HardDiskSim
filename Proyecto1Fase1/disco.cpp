@@ -1,6 +1,327 @@
 #include "disco.h"
 #include "reports.h"
 #include "ext.h"
+#include "recuperacion.h"
+#include "queue"
+void Disco::PropietarioArchivoParticion(const char *Nombre, const char *Path, int Tipo, int Perm, IUG Permiso){
+    Disco *Tempo=this;
+    while (Tempo!=nullptr) {
+
+        for (int i=0;i<Tempo->Lista.count();i++) {
+            MOU Te= Lista.at(i);
+            std::string NombreParti=Tempo->Apodo+std::to_string(Te.Numero);
+            if(Fun->IF(NombreParti,Nombre)){
+                EXT *E = new EXT(Permiso);
+                const char* Real=Tempo->Path.data();
+                int Comienzo;
+                //Es Logica
+                if(Te.EsLogica){
+                    Comienzo=Te.Logica.part_start+int(sizeof(EBR));
+                }else{
+                    //TamanioStruct=int(sizeof(EBR));
+                    Comienzo=Te.Particion.part_start;
+                }
+
+                //Tipo De Formato
+
+                FILE *f;
+                f=fopen(Real,"r+");
+                SPB Super;
+                fseek(f,Comienzo,SEEK_SET);
+                fread(&Super,sizeof(Super),1,f);
+                fclose(f);
+                E->CambiarPropietarioNormalRecursivo(Super.s_first_ino,Path,Tempo->Path.data(),Perm,Tipo);
+                //E->CambiarPermisosNormalRecursivo(Super.s_first_ino,Path,Tempo->Path.data(),Tipo,Perm);
+                return ;
+            }
+        }
+        Tempo=Tempo->Siguiente;
+    }
+
+    std::cout<<"No Se Encontro La Particion "<<Nombre<<" Para Poder Modificar Permisos"<<std::endl;
+    return ;
+}
+
+std::queue<JOR> Disco::Recuperar(int Comienzo,const char *Path){
+    Recuperacion *Recuva  = new Recuperacion();
+    std::queue<JOR>  Cola=Recuva->ListaDeOperaciones(Comienzo,Path);
+    JOR Actual;
+    //Retornar Cola
+    return Cola;
+}
+std::queue<JOR> Disco::RecuperarInformacion(const char *Nombre){
+    Disco *Tempo=this;
+    while (Tempo!=nullptr) {
+
+        for (int i=0;i<Tempo->Lista.count();i++) {
+            MOU Te= Lista.at(i);
+            std::string NombreParti=Tempo->Apodo+std::to_string(Te.Numero);
+            if(Fun->IF(NombreParti,Nombre)){
+
+                const char* Real=Tempo->Path.data();
+                int Comienzo;
+                int Tamanio;
+                //Es Logica
+                if(Te.EsLogica){
+                    Comienzo=Te.Logica.part_start+int(sizeof(EBR));
+                    Tamanio=Te.Logica.part_size;
+                }else{
+                    //TamanioStruct=int(sizeof(EBR));
+                    Comienzo=Te.Particion.part_start;
+                    Tamanio=Te.Particion.part_size;
+                }
+
+                //Tipo De Formato
+
+                FILE *f;
+                f=fopen(Real,"r+");
+                SPB Super;
+                fseek(f,Comienzo,SEEK_SET);
+                fread(&Super,sizeof(Super),1,f);
+                fclose(f);
+                return Recuperar(Comienzo,Tempo->Path.data());
+
+            }
+        }
+        Tempo=Tempo->Siguiente;
+    }
+
+    std::cout<<"No Se Encontro La Particion "<<Nombre<<" Para Poder Perder Informacion"<<std::endl;
+    std::queue<JOR> Vacia;
+    return Vacia;
+}
+void Disco::PerderInformacion(const char *Nombre){
+    Disco *Tempo=this;
+    while (Tempo!=nullptr) {
+
+        for (int i=0;i<Tempo->Lista.count();i++) {
+            MOU Te= Lista.at(i);
+            std::string NombreParti=Tempo->Apodo+std::to_string(Te.Numero);
+            if(Fun->IF(NombreParti,Nombre)){
+
+                const char* Real=Tempo->Path.data();
+                int Comienzo;
+                int Tamanio;
+                //Es Logica
+                if(Te.EsLogica){
+                    Comienzo=Te.Logica.part_start+int(sizeof(EBR));
+                    Tamanio=Te.Logica.part_size;
+                }else{
+                    //TamanioStruct=int(sizeof(EBR));
+                    Comienzo=Te.Particion.part_start;
+                    Tamanio=Te.Particion.part_size;
+                }
+
+                //Tipo De Formato
+
+                FILE *f;
+                f=fopen(Real,"r+");
+                SPB Super;
+                fseek(f,Comienzo,SEEK_SET);
+                fread(&Super,sizeof(Super),1,f);
+                //Indicar Al Super Que Ya No Sirve
+                Super.s_magic=-1;
+                fseek(f,Comienzo,SEEK_SET);
+                fwrite(&Super,sizeof(Super),1,f);
+
+                fclose(f);
+
+                FillDisk(Super.s_bm_inode_start,Super.s_inode_start,'\0',Tempo->Path.data());
+                std::cout<<" Se Ha Provocado Una Perdida De La Informacion, Se Necesita Recuperar "<<std::endl;
+                return ;
+            }
+        }
+        Tempo=Tempo->Siguiente;
+    }
+
+    std::cout<<"No Se Encontro La Particion "<<Nombre<<" Para Poder Perder Informacion"<<std::endl;
+    return ;
+
+}
+void Disco::FillDisk(int Begin, int Size, char Character,const char *Path){
+    FILE *f;
+    f=fopen(Path,"r+");
+    int Kilo=Size/1024;
+    if(Kilo>0){
+        char Buffi[1024];
+        for (int i=0;i<1024;i++) {
+            Buffi[i]=Character;
+        }
+
+        fseek(f,Begin,SEEK_SET);
+        for(int i=0;i<Kilo;i++){
+
+            fwrite(&Buffi,sizeof (Buffi),1,f);
+        }
+
+    }
+    Size=Size-Kilo*1024;
+    Begin=Begin+(Kilo*1024);
+    fseek(f,Begin,SEEK_SET);
+    for(int i=0;i<Size;i++){
+
+        fwrite(&Character,sizeof (Character),1,f);
+    }
+    fclose(f);
+}
+
+//MOV
+void Disco::MoverArchivoParticion(const char *Nombre, const char *PathOrigen, const char *PathDestino, IUG Permiso){
+    Disco *Tempo=this;
+    while (Tempo!=nullptr) {
+
+        for (int i=0;i<Tempo->Lista.count();i++) {
+            MOU Te= Lista.at(i);
+            std::string NombreParti=Tempo->Apodo+std::to_string(Te.Numero);
+            if(Fun->IF(NombreParti,Nombre)){
+                EXT *E = new EXT(Permiso);
+                const char* Real=Tempo->Path.data();
+                int Comienzo;
+                //Es Logica
+                if(Te.EsLogica){
+                    Comienzo=Te.Logica.part_start+int(sizeof(EBR));
+                }else{
+                    //TamanioStruct=int(sizeof(EBR));
+                    Comienzo=Te.Particion.part_start;
+                }
+
+                //Tipo De Formato
+
+                FILE *f;
+                f=fopen(Real,"r+");
+                SPB Super;
+                fseek(f,Comienzo,SEEK_SET);
+                fread(&Super,sizeof(Super),1,f);
+                fclose(f);
+                E->MoverCarpetaArchivo(&Super,Super.s_first_ino,PathOrigen,Tempo->Path.data(),PathDestino);
+
+
+                return ;
+            }
+        }
+        Tempo=Tempo->Siguiente;
+    }
+
+    std::cout<<"No Se Encontro La Particion "<<Nombre<<" Para Poder MOVER"<<std::endl;
+    return ;
+}
+void Disco::CopiarArchivoParticion(const char *Nombre, const char *PathOrigen, const char *PathDestino, IUG Permiso){
+    Disco *Tempo=this;
+    while (Tempo!=nullptr) {
+
+        for (int i=0;i<Tempo->Lista.count();i++) {
+            MOU Te= Lista.at(i);
+            std::string NombreParti=Tempo->Apodo+std::to_string(Te.Numero);
+            if(Fun->IF(NombreParti,Nombre)){
+                EXT *E = new EXT(Permiso);
+                const char* Real=Tempo->Path.data();
+                int Comienzo;
+                //Es Logica
+                if(Te.EsLogica){
+                    Comienzo=Te.Logica.part_start+int(sizeof(EBR));
+                }else{
+                    //TamanioStruct=int(sizeof(EBR));
+                    Comienzo=Te.Particion.part_start;
+                }
+
+                //Tipo De Formato
+
+                FILE *f;
+                f=fopen(Real,"r+");
+                SPB Super;
+                fseek(f,Comienzo,SEEK_SET);
+                fread(&Super,sizeof(Super),1,f);
+                fclose(f);
+                E->CopiarCarpetaArchivo(&Super,Super.s_first_ino,PathOrigen,Tempo->Path.data(),PathDestino);
+
+
+                return ;
+            }
+        }
+        Tempo=Tempo->Siguiente;
+    }
+
+    std::cout<<"No Se Encontro La Particion "<<Nombre<<" Para Poder COPIAR "<<std::endl;
+    return ;
+}
+void Disco::BuscarArchivoParticion(const char *Nombre, const char *PathBase, const char *NombreBusqueda, IUG Permiso){
+    Disco *Tempo=this;
+    while (Tempo!=nullptr) {
+
+        for (int i=0;i<Tempo->Lista.count();i++) {
+            MOU Te= Lista.at(i);
+            std::string NombreParti=Tempo->Apodo+std::to_string(Te.Numero);
+            if(Fun->IF(NombreParti,Nombre)){
+                EXT *E = new EXT(Permiso);
+                const char* Real=Tempo->Path.data();
+                int Comienzo;
+                //Es Logica
+                if(Te.EsLogica){
+                    Comienzo=Te.Logica.part_start+int(sizeof(EBR));
+                }else{
+                    //TamanioStruct=int(sizeof(EBR));
+                    Comienzo=Te.Particion.part_start;
+                }
+
+                //Tipo De Formato
+
+                FILE *f;
+                f=fopen(Real,"r+");
+                SPB Super;
+                fseek(f,Comienzo,SEEK_SET);
+                fread(&Super,sizeof(Super),1,f);
+                fclose(f);
+                E->FIND(Super.s_first_ino,PathBase,Tempo->Path.data());
+
+
+                return ;
+            }
+        }
+        Tempo=Tempo->Siguiente;
+    }
+
+    std::cout<<"No Se Encontro La Particion "<<Nombre<<" Para Poder FIND "<<std::endl;
+    return ;
+}
+void Disco::RenombrarArchivoParticion(const char *Nombre, const char *NuevoNombre, const char *Path, IUG Permiso){
+    Disco *Tempo=this;
+    while (Tempo!=nullptr) {
+
+        for (int i=0;i<Tempo->Lista.count();i++) {
+            MOU Te= Lista.at(i);
+            std::string NombreParti=Tempo->Apodo+std::to_string(Te.Numero);
+            if(Fun->IF(NombreParti,Nombre)){
+                EXT *E = new EXT(Permiso);
+                const char* Real=Tempo->Path.data();
+                int Comienzo;
+                //Es Logica
+                if(Te.EsLogica){
+                    Comienzo=Te.Logica.part_start+int(sizeof(EBR));
+                }else{
+                    //TamanioStruct=int(sizeof(EBR));
+                    Comienzo=Te.Particion.part_start;
+                }
+
+                //Tipo De Formato
+
+                FILE *f;
+                f=fopen(Real,"r+");
+                SPB Super;
+                fseek(f,Comienzo,SEEK_SET);
+                fread(&Super,sizeof(Super),1,f);
+                fclose(f);
+                E->CambiarNombre(Super.s_first_ino,Path,Tempo->Path.data(),NuevoNombre);
+
+                return ;
+            }
+        }
+        Tempo=Tempo->Siguiente;
+    }
+
+    std::cout<<"No Se Encontro La Particion "<<Nombre<<" Para Poder CAMBIAR Nombre"<<std::endl;
+    return ;
+}
+
 void Disco::PermisoArchivoParticion(const char *Nombre,const char *Path,int Tipo,int Perm,IUG Permiso){
     Disco *Tempo=this;
     while (Tempo!=nullptr) {
@@ -248,7 +569,7 @@ void Disco::CrearCarpetaParticion(const char *Nombre, const char *Path, char Pad
     std::cout<<"No Se Encontro La Particion "<<Nombre<<" Para Crear Carpeta"<<std::endl;
 
 }
-void Disco::FormatearParticion(const char *Nombre, int Tipo,IUG Permiso){
+void Disco::FormatearParticion(const char *Nombre,IUG Permiso,int Tipo){
     Disco *Tempo=this;
     while (Tempo!=nullptr) {
 
@@ -274,13 +595,10 @@ void Disco::FormatearParticion(const char *Nombre, int Tipo,IUG Permiso){
                 }
 
                 //Tipo De Formato
-                if(Tipo==1){
-                    E->EstructurarFormatoEXT2(Comienzo,TamanioParticion,TamanioStruct,Path);
-                    std::cout<<"Se Formateo La Particion "<<Nombre<<" Con El Formato EXT2 Del Disco Ubicado En "<<Tempo->Path<<std::endl;
-                }else{
-                    E->EstructurarFormatoEXT3(Comienzo,TamanioParticion,TamanioStruct,Path);
+
+                    E->EstructurarFormatoEXT3(Comienzo,TamanioParticion,TamanioStruct,Path,Tipo);
                     std::cout<<"Se Formateo La Particion "<<Nombre<<" Con El Formato EXT3 Del Disco Ubicado En "<<Tempo->Path<<std::endl;
-                }
+
 
                 return;
             }

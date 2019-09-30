@@ -5,13 +5,12 @@
 #include <stdio.h>
 #include "stdlib.h"
 #include "functions.h"
+#include "recuperacion.h"
 class EXT
 {
-public:
-
+public:    
     //Cambiar Dueño
-    void CambiarPropietarioNormalRecursivo(int Comienzo,const char *PathVirtual,const char *PathReal,IUG Permiso);
-    //FIND
+    void CambiarPropietarioNormalRecursivo(int Comienzo,const char *PathVirtual,const char *PathReal,int NuevoDuenio,int OPE);
     void FIND(int Comienzo,std::string PathVirtual,const char *PathReal);
     //MoverCarpetaOArchivo
     void MoverCarpetaArchivo(SPB *Super,int Comienzo,std::string PathVirtualOrigen,const char *PathReal,std::string PathVirtualDestino);
@@ -36,15 +35,24 @@ public:
     //CrearCarpetasSimples
     bool CrearCarpetaSimple(SPB *Super,int Comienzo,const char *PathVirtual,const char *PathReal);
     //Calcular la cantidad de estructruas
-    int CalcularCantidad(int Tamanio,int Tipo);
+    int CalcularCantidad(int Tamanio);
     //CrearFormato
     SPB LlenarSuperBloque(int Tipo,int Comienzo,int Cantidad);
-    void EstructurarFormatoEXT2(int ComienzoParticion,int TamanioParticion,int TamanioStruct,std::string Direcc);
-    void EstructurarFormatoEXT3(int ComienzoParticion,int TamanioParticion,int TamanioStruct,std::string  Direcc);
+    void EstructurarFormatoEXT3(int ComienzoParticion,int TamanioParticion,int TamanioStruct,std::string Direcc,int Tipo);
+
     EXT(IUG Permiso);
 private :
+    //Auxiliares
+    void CantidadVeces(std::string Contenido);
+    int ValPrimeraPos=-1;
+    int ValTamanio=-1;
+    //
     void DuplicarInodo(INO *Original,INO *Copia);
     IUG Permiso;
+    //FIND
+    void FindInodo(int Comienzo,const char *PathReal,std::string Expansion);
+    void FindDirectos(int Comienzo,const char *PathReal,int Tipo,std::string Expansion);
+    void FindIndirectos(int Nivel, int NivelActual,int Comienzo,const char *PathReal,int Tipo,std::string Expansion);
     //Copiar
     int CopiarInodo(SPB *Super,int Comienzo,const char *PathReal);
     int CopiarDirectos(SPB *Super,int Comienzo,const char *PathReal,int Tipo);
@@ -102,6 +110,8 @@ private :
     int InodoLibre(SPB *Super,const char* Path);
     //Buscar Bloque Libre
     int BloqueLibre(SPB *Super,const char* Path);
+    int BloqueLibreConte(SPB *Super,const char* Path);
+    int DarPrimeraPos(SPB *Super,const char* Path);
     //Comprobar Si Se Puede Colocar Carpeta En Un Bloque Directo
     int ColocarCarpeta(std::string NombreCarpeta,int PosDirecto,SPB *Super,const char *PathReal);
     int CrearIndirectos(int Nivel,int NivelActual,SPB *Super,const char *PathReal);

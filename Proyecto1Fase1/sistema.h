@@ -5,6 +5,9 @@
 class Sistema
 {
 public:
+    //FASE 2
+    void MKFS(std::string Ejecutar,std::string Type);
+    //FASE 1
     void Ejecutar(std::string Ejecutar);
     void CrearDirectorio(std::string Conte);
     std::string SplitRaid(std::string Conte);

@@ -1,7 +1,237 @@
 #include "menu.h"
 #include <iostream>
-
 #include <fstream>
+#include "recuperacion.h"
+void Menu::Loss(std::string IDMontado){
+    Disco *Ptr=this->PrimerDisco;
+    if(Ptr==nullptr){
+        std::cout<<"No Hay Ninguna Particion Montada En El Sistema"<<std::endl;
+    }else {
+        if(OpeU->HayUsuarioEnElSistema()){
+            //Iniciar Perdida
+            this->PrimerDisco->PerderInformacion(OpeU->IDMontado.data());
+        }else{
+            std::cout<<"No Hay Usuarios En El Sistema"<<std::endl;
+        }
+    }
+}
+void Menu::Recuperar(std::string IDMontado){
+    //FALTA AGREGAR LAS OPERACIONES EN CADA METODO
+    Disco *Ptr=this->PrimerDisco;
+    if(Ptr==nullptr){
+        std::cout<<"No Hay Ninguna Particion Montada En El Sistema"<<std::endl;
+    }else {
+
+        std::queue<JOR> Cola=this->PrimerDisco->RecuperarInformacion(OpeU->IDMontado.data());
+        OpeU->IDMontado=IDMontado;
+        SubRecuperar(Cola);
+    }
+}
+void Menu::SubRecuperar(std::queue<JOR> Cola){
+    JOR Actual;
+    IUG Tempo=OpeU->Permiso;    
+    MKFS(OpeU->IDMontado.data(),"fast",3);
+    //Falta Indicar A Quien Recuperar
+    while(Cola.empty()==false){
+        Actual=Cola.front();
+        OpeU->Permiso=Actual.Info;
+        bool Recursivo=Actual.Recursivo;
+        std::string Contenido=Actual.Contenido;
+        std::string Direccion=Actual.Direccion;
+
+        switch (Actual.Tipo) {
+        case 4:{
+
+
+            MKGRP(Contenido.data());
+            break;
+        }
+        case 5:{
+            RMGRP(Contenido.data());
+            break;
+        }
+        case 6:{
+            std::string s = Contenido;
+            std::string delimiter = "|";
+            size_t pos = 0;
+            std::string token;
+            std::string Usr,Pwd,Grp;
+            std::string Escritura="";
+            int Conta=1;
+            while ((pos = s.find(delimiter)) != std::string::npos) {
+                token = s.substr(0, pos);
+                if(this->Fun->IF("",token)){
+
+                }else{
+                    if(Conta==1)
+                        Usr=token;
+                    if(Conta==2)
+                        Pwd=token;
+                    if(Conta==3)
+                        Grp=token;
+                    Conta++;
+                }
+                s.erase(0, pos + delimiter.length());
+            }
+            MKUSR(Usr.data(),Pwd.data(),Grp.data());
+            break;
+        }
+        case 7:{
+            RMUSR(Contenido.data());
+            break;
+        }
+        case 8:{
+            int Tipo=1;
+            if(Recursivo)
+                Tipo=2;
+            CHMOD(Direccion.data(),atoi(Contenido.data()),Tipo);
+            break;
+        }
+        case 9:{
+            //MKFILE();
+            break;
+        }
+        case 11:{
+            REM(Direccion.data());
+            break;
+        }
+        case 12:{
+            //EDIT();
+            break;
+        }
+        case 13:{
+            REN(Direccion.data(),Contenido.data());
+            break;
+        }
+        case 14:{
+            char Tipo='0';
+            if(Recursivo)
+                Tipo='1';
+            MKDIR(Direccion.data(),Tipo);
+            break;
+        }
+        case 15:{
+            CP(Direccion.data(),Contenido.data());
+            break;
+        }
+        case 16:{
+            MV(Direccion.data(),Contenido.data());
+            break;
+        }
+        case 17:{
+            int Tipo=1;
+            if(Recursivo)
+                Tipo=2;
+            CHOWN(Direccion.data(),(Contenido.data()),Tipo);
+            break;
+        }
+        case 18:{
+            CHGRP(Contenido.data(),Direccion.data());
+            break;
+        }
+        default:{
+            std::cout<<"NO PUEDE"<<Actual.Tipo<<std::endl;
+            break;
+        }
+        }
+
+
+
+
+
+        Cola.pop();
+    }
+    OpeU->Permiso=Tempo;
+}
+//MV
+void Menu::MV(const char *PathOrigen, const char *PathDestino){
+    Disco *Ptr=this->PrimerDisco;
+    if(Ptr==nullptr){
+        std::cout<<"No Hay Ninguna Particion Montada En El Sistema"<<std::endl;
+    }else {
+        if(OpeU->HayUsuarioEnElSistema()){
+
+            this->PrimerDisco->MoverArchivoParticion(OpeU->IDMontado.data(),PathOrigen,PathDestino,OpeU->Permiso);
+        }else{
+            std::cout<<"No Hay Usuarios En El Sistema"<<std::endl;
+        }
+    }
+}
+//CP
+void Menu::CP(const char *PathOrigen, const char *PathDestino){
+    Disco *Ptr=this->PrimerDisco;
+    if(Ptr==nullptr){
+        std::cout<<"No Hay Ninguna Particion Montada En El Sistema"<<std::endl;
+    }else {
+        if(OpeU->HayUsuarioEnElSistema()){
+
+            this->PrimerDisco->CopiarArchivoParticion(OpeU->IDMontado.data(),PathOrigen,PathDestino,OpeU->Permiso);
+        }else{
+            std::cout<<"No Hay Usuarios En El Sistema"<<std::endl;
+        }
+    }
+}
+//FIND
+void Menu::FIND(const char *PathVirtual, const char *Nombre){
+    Disco *Ptr=this->PrimerDisco;
+    if(Ptr==nullptr){
+        std::cout<<"No Hay Ninguna Particion Montada En El Sistema"<<std::endl;
+    }else {
+        if(OpeU->HayUsuarioEnElSistema()){
+
+            this->PrimerDisco->BuscarArchivoParticion(OpeU->IDMontado.data(),PathVirtual,Nombre,OpeU->Permiso);
+        }else{
+            std::cout<<"No Hay Usuarios En El Sistema"<<std::endl;
+        }
+    }
+}
+//CHHGRP
+void Menu::CHGRP(const char *Usr, const char *NuevoGrupo){
+    if(OpeU->HayUsuarioEnElSistema()){
+        bool Root=OpeU->UsuarioActualEsRoot();
+        if(Root){
+            std::string Actualizar=OpeU->CambiarGrupo(Usr,NuevoGrupo);
+            REM("/users.txt");
+            MKFILE("/users.txt",'0',Actualizar.data());
+        }else{
+            std::cout<<"Se Necesitan Permisos 'Root' Para Eliminar Usuarios"<<std::endl;
+        }
+    }else{
+        std::cout<<"No Hay Usuario En El Sistema, Se Necesita Ingresar"<<std::endl;
+    }
+}
+//REN
+void Menu::REN(const char *PathVirtual, const char *NuevoNombre){
+    Disco *Ptr=this->PrimerDisco;
+    if(Ptr==nullptr){
+        std::cout<<"No Hay Ninguna Particion Montada En El Sistema"<<std::endl;
+    }else {
+        if(OpeU->HayUsuarioEnElSistema()){
+
+            this->PrimerDisco->RenombrarArchivoParticion(OpeU->IDMontado.data(),NuevoNombre,PathVirtual,OpeU->Permiso);
+        }else{
+            std::cout<<"No Hay Usuarios En El Sistema"<<std::endl;
+        }
+    }
+}
+//CHOWN
+void Menu::CHOWN(const char *PathVirtual, std::string NuevoDuenio, int Tipo){
+    Disco *Ptr=this->PrimerDisco;
+    if(Ptr==nullptr){
+        std::cout<<"No Hay Ninguna Particion Montada En El Sistema"<<std::endl;
+    }else {
+        if(OpeU->HayUsuarioEnElSistema()){
+            int USR=OpeU->Uid(NuevoDuenio);
+            if(USR==-1){
+                std::cout<<"No Se Encontro El Usuario "<<NuevoDuenio<<std::endl;
+                return;
+            }
+            this->PrimerDisco->PermisoArchivoParticion(OpeU->IDMontado.data(),PathVirtual,Tipo,USR,OpeU->Permiso);
+        }else{
+            std::cout<<"No Hay Usuarios En El Sistema"<<std::endl;
+        }
+    }
+}
 //CHMOD
 void Menu::CHMOD(const char *PathVirtual, int Ugo, int Tipo){
     Disco *Ptr=this->PrimerDisco;
@@ -190,7 +420,7 @@ void Menu::MKDIR(const char *Path, char Padre){
     }
 }
 //MKFS
-void Menu::MKFS(const char *Id, const char *Type, int EXT){
+void Menu::MKFS(const char *Id, const char *Type,int Tipo){
     std::cout<<"Falta Limpiar Particion Antes"<<std::endl;
 
     Disco *Ptr=this->PrimerDisco;
@@ -201,7 +431,7 @@ void Menu::MKFS(const char *Id, const char *Type, int EXT){
         int B=OpeU->Permiso.Uid;
         OpeU->Permiso.Gid=1;
         OpeU->Permiso.Uid=1;
-        this->PrimerDisco->FormatearParticion(Id,EXT,OpeU->Permiso);
+        this->PrimerDisco->FormatearParticion(Id,OpeU->Permiso,Tipo);
         OpeU->Permiso.Gid=A;
         OpeU->Permiso.Uid=B;
     }
@@ -942,13 +1172,13 @@ void Menu::NewMenu(){
     MOUNT("/home/pc/Documents/Archivos/Prueba/Disco.disk","a");
     MKFS("vda1","full",1);
     LOGIN("root","123","vda1");
-
+    MKFILE("/Dita.txt",'0',"El vídeo proporciona una manera eficaz para ayudarle a demostrar el punto.Cuando haga clic en Vídeo en línea, puede pegar el código para insertar del vídeo que desea agregar. ");
+    EDIT("/Dita.txt","ContenidoMASContenidoMAS");
     MKDIR("/Carpeta/Ubuntu/Wayland/Limite/K/M",'1');
     MKDIR("/Carpeta/Ubuntu/Wayland/Limite/K/M/Nueva",'1');
     MKFILE("/Carpeta/Ubuntu/Wayland/Limite/K/M/Nueva/Hola.txt",'0',"y El vídeo proporciona una manera eficaz para ayudarle a demostrar el punto.Cuando haga clic en Vídeo en línea, puede pegar el código para ");
     MKFILE("/Carpeta/Ubuntu/Wayland/Limite/K/M/Nueva/Hola.txt",'0',"y El vídeo proporciona una manera eficaz para ayudarle a demostrar el punto.Cuando haga clic en Vídeo en línea, puede pegar el código para ");
-    MKFILE("/Dita.txt",'0',"El vídeo proporciona una manera eficaz para ayudarle a demostrar el punto.Cuando haga clic en Vídeo en línea, puede pegar el código para insertar del vídeo que desea agregar. ");
-    EDIT("/Dita.txt","ContenidoMASContenidoMAS");
+
     CHMOD("/users.txt",233,1);
     REM("/dita.txt");
 

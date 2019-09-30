@@ -6,12 +6,160 @@
 #include <fstream>
 
 /*
- * AL COLOCAR ARCHIVOS,ARCHIVO CONTENIDO Y CARPETAS FALTA COMPROBACION SI SE ACABARON LOS ESOACIOS PARA BLOQUES INODOS
+ * Solo Contenido en los primeros 12
+* AL COLOCAR ARCHIVOS,ARCHIVO CONTENIDO Y CARPETAS FALTA COMPROBACION SI SE ACABARON LOS ESOACIOS PARA BLOQUES INODOS
 *El USAR LA CARPETA '/' CAusa Errores
 */
-//Permisos
+
+//Cambiar Propietario
+void EXT::CambiarPropietarioNormalRecursivo(int Comienzo, const char *PathVirtual, const char *PathReal, int NuevoDuenio,int OPE){
+    int Actual=BuscarActual(Comienzo,PathVirtual,PathReal);
+    if(Actual==-1){
+        std::cout<<"No Se Encontro Una Carpeta O Archivo En "<<PathVirtual<<" No Se Pudo CambiarPermiso"<<std::endl;
+        return ;
+    }
 
 
+    FILE *f;
+    f=fopen(PathReal,"r+");
+    INO Carpeta;
+    fseek(f,Actual,SEEK_SET);
+    fread(&Carpeta,sizeof(Carpeta),1,f);
+
+    //Si Es Root o Dueño De la Carpeta
+    if(Permiso.Uid==1 ||Permiso.Gid==1 || Permiso.Uid==Carpeta.i_uid){
+        Carpeta.i_uid=NuevoDuenio;
+        //Carpeta.i_gid=Permiso.Gid;
+        fseek(f,Actual,SEEK_SET);
+        fwrite(&Carpeta,sizeof(Carpeta),1,f);
+
+    }else{
+        std::cout<<"No Se Pueden Cambiar El Propietario De La Carpeta, El Usuario Con Codigo "<<Permiso.Uid<<" No Es El Propietario"<<std::endl;
+        return ;
+    }
+
+    fclose(f);
+
+
+    //Cambiar De Manera Normal
+    if(OPE==1){
+        std::cout<<"Se Cambiaron El Propietario A Solo Una Carpeta O Archivo De '"<<PathVirtual<<"' Cod Nuevo Duenoi: "<<std::to_string(Permiso.Uid)<<std::endl;
+        return ;
+
+    }
+
+    //Es Carpeta
+    if(Carpeta.i_type=='1')
+        return;
+
+    for(int i=0;i<12;i++){
+        int Apuntador=Carpeta.i_block[i];
+        if(Apuntador!=-1){
+            ModificarIndirectos(0,0,Apuntador,PathReal,2,NuevoDuenio);
+        }
+    }
+
+    for(int i=0;i<3;i++){
+        int Apuntador=Carpeta.i_block[i+12];
+        if(Apuntador!=-1){
+            ModificarIndirectos(1+i,0,Apuntador,PathReal,2,NuevoDuenio);
+        }
+    }
+
+    std::cout<<"Se Cambio El Propietario De Manera Recursiva De '"<<PathVirtual<<"' El Nuevo Propietario Codigo: "<<std::to_string(NuevoDuenio)<<std::endl;
+
+
+}
+//FIND Arbol
+void EXT::FIND(int Comienzo, std::string PathVirtual, const char *PathReal){
+    int Buscar=BuscarActual(Comienzo,PathVirtual,PathReal);
+    if(Buscar==-1){
+        std::cout<<"No Se Encontro El Archivo O Carpeta En "<<PathVirtual<<std::endl;
+        return ;
+    }
+    if(TienePermiso(Buscar,PathReal,"100")==false){
+        std::cout<<"No Tiene Permisos De Lectura Para "<<PathVirtual<<" No se puede aplicar comando Find"<<std::endl;
+        return;
+    }
+
+    FindInodo(Comienzo,PathReal,"");
+
+}
+void EXT::FindDirectos(int Comienzo, const char *PathReal,int Tipo,std::string Expansion){
+    FILE *f;
+    f=fopen(PathReal,"r+");
+    BCA Carpeta;
+    fseek(f,Comienzo,SEEK_SET);
+    fread(&Carpeta,sizeof(Carpeta),1,f);
+    fclose(f);
+
+    for(int i=0;i<4;i++){
+        CON Contenido=Carpeta.content[i];
+        if(Contenido.b_inodo!=-1){
+
+            if(Tipo==0){//Carpeta
+                std::cout<<Expansion<<"|_"<<Contenido.b_name<<std::endl;
+                Expansion=Expansion+" ";
+                FindInodo(Contenido.b_inodo,PathReal,Expansion);
+
+            }else{
+                std::cout<<Expansion<<"||_"<<Contenido.b_name<<std::endl;
+            }
+        }
+    }
+
+}
+void EXT::FindIndirectos(int Nivel, int NivelActual, int Comienzo,  const char *PathReal,int Tipo,std::string Expansion){
+    if(Nivel==NivelActual){
+        FindDirectos(Comienzo,PathReal,Tipo,Expansion);
+    }
+    FILE *f;
+    f=fopen(PathReal,"r+");
+    BAP Apunta;
+    fseek(f,Comienzo,SEEK_SET);
+    fread(&Apunta,sizeof(Apunta),1,f);
+    fclose(f);
+
+
+    for(int i=0;i<16;i++){
+        int Valor=Apunta.b_pointers[i];
+        if(Valor!=-1){
+           FindIndirectos(Nivel,NivelActual+1,Valor,PathReal,Tipo,Expansion);
+        }
+    }
+}
+void EXT::FindInodo(int Comienzo, const char *PathReal,std::string Expansion){
+    if(TienePermiso(Comienzo,PathReal,"100")==false){
+        return ;
+    }
+
+
+    FILE *f;
+    f=fopen(PathReal,"r+");
+    INO Carpeta;
+    fseek(f,Comienzo,SEEK_SET);
+    fread(&Carpeta,sizeof(Carpeta),1,f);
+    fclose(f);
+
+    int Tipo=1;
+    if(Carpeta.i_type=='0')
+        Tipo=0;
+    for(int i=0;i<12;i++){
+        int Apuntador=Carpeta.i_block[i];
+        if(Apuntador!=-1){
+            FindIndirectos(0,0,Apuntador,PathReal,Tipo,Expansion);
+
+        }
+    }
+
+    for(int i=0;i<3;i++){
+        int Apuntador=Carpeta.i_block[i+12];
+        if(Apuntador!=-1){
+            FindIndirectos(1+i,0,Apuntador,PathReal,Tipo,Expansion);
+        }
+    }
+
+}
 //Mover
 void EXT::MoverCarpetaArchivo(SPB *Super, int Comienzo, std::string PathVirtualOrigen, const char *PathReal, std::string PathVirtualDestino){
     int Existe=BuscarActual(Comienzo,PathVirtualOrigen,PathReal);
@@ -225,6 +373,7 @@ int EXT::CopiarInodo(SPB *Super,int Comienzo, const char *PathReal){
     fclose(f);
     return NuevaCopia;
 }
+
 void EXT::DuplicarInodo(INO *Original, INO *Copia){
     Copia->i_gid=Original->i_gid;
     Copia->i_uid=Original->i_uid;
@@ -542,7 +691,6 @@ void EXT::ModificarDirectos(int Comienzo, const char *PathReal, int Tipo,int Per
     fseek(f,Comienzo,SEEK_SET);
     fread(&Carpeta,sizeof(Carpeta),1,f);
     fclose(f);
-    std::string Concatenar="";
     for(int i=0;i<4;i++){
         CON Contenido=Carpeta.content[i];
 
@@ -569,7 +717,7 @@ void EXT::ModificarIndirectos(int Nivel, int NivelActual, int Comienzo,  const c
     }
 
 }
-//Tipo==1 CHMOD Recursivo
+//Tipo==1 CHMOD Recursivo   Tipo==2 CHOWN Recursivo
 void EXT::ModificarInodo(int Comienzo, const char *PathReal,int Tipo,int Perm){
     FILE *f;
     f=fopen(PathReal,"r+");
@@ -579,12 +727,13 @@ void EXT::ModificarInodo(int Comienzo, const char *PathReal,int Tipo,int Perm){
 
 
     if(Tipo==1){
-        Carpeta.i_perm=Perm;
-        fseek(f,Comienzo,SEEK_SET);
-        fwrite(&Carpeta,sizeof(Carpeta),1,f);
+        Carpeta.i_perm=Perm;        
+    }else if(Tipo==2){
+        Carpeta.i_uid=Perm;
     }
 
-
+    fseek(f,Comienzo,SEEK_SET);
+    fwrite(&Carpeta,sizeof(Carpeta),1,f);
     fclose(f);
 
     if(Carpeta.i_type=='1')//Es Carpeta No Hay Mas
@@ -678,6 +827,7 @@ bool EXT::EliminarArchivoCarpeta(SPB *Super, int Comienzo, const char *PathVirtu
 
     if(EliminarArchivoCarpetaPadre(Super,Comienzo,Conserva.data(),PathReal,Actual)){
         std::cout<<"Se Elimino La Ruta O Archivo: "<<PathVirtual<<std::endl;
+        LiberarInodo(Super,PathReal,Actual);
         return true;
     }else{
         std::cout<<"No Se Pudo Eliminar"<<PathVirtual<<std::endl;
@@ -685,8 +835,25 @@ bool EXT::EliminarArchivoCarpeta(SPB *Super, int Comienzo, const char *PathVirtu
     }
 
 }
-void EXT::LiberarInodo(SPB *Super, const char *PathReal, int Comienzo){}
-void EXT::LiberarBloque(SPB *Super, const char *PathReal,int Comienzo){}
+void EXT::LiberarInodo(SPB *Super, const char *PathReal, int Comienzo){
+    FILE *f;
+    f=fopen(PathReal,"r+");
+    char Actual='0';
+    int See=Super->s_bm_inode_start+(Comienzo-Super->s_inode_start)/Super->s_inode_size;
+    fseek(f,See,SEEK_SET);
+    fwrite(&Actual,sizeof(Actual),1,f);
+    fclose(f);
+}
+void EXT::LiberarBloque(SPB *Super, const char *PathReal,int Comienzo){
+    FILE *f;
+    f=fopen(PathReal,"r+");
+    char Actual='0';
+    int See=Super->s_bm_block_start+(Comienzo-Super->s_block_start)/Super->s_block_size;
+    fseek(f,See,SEEK_SET);
+    fwrite(&Actual,sizeof(Actual),1,f);
+    fclose(f);
+
+}
 bool EXT::EliminarDirectos(SPB *Super,int Comienzo, const char *PathReal, int Tipo, int Elim){
     FILE *f;
     f=fopen(PathReal,"r+");
@@ -941,7 +1108,8 @@ std::string EXT::ColocarContenidoArchivo(int PosDirecto, SPB *Super, const char 
 
             strcpy(Directo.content[z].b_name,Sub.c_str());
             //Inodo Nuevo
-            int Libre = InodoLibre(Super,PathReal);
+            //int Libre = BloqueLibre(Super,PathReal);
+            int Libre = BloqueLibreConte(Super,PathReal);
             Directo.content[z].b_inodo=Libre;
 
             //Se Reduce
@@ -1116,6 +1284,12 @@ int EXT::BuscarActual(int Comienzo, std::string PathVirtual, const char *PathRea
 
 
     return  Punteros;
+}
+void EXT::CantidadVeces(std::string Contenido){
+    int Div = int(Contenido.length())/64;
+    if(Contenido.length()%64!=0)
+        Div++;
+    ValTamanio=Div;
 }
 //CrearArchivo
 bool EXT::CrearArchivoCompleto(SPB *Super, int Comienzo, const char *PathVirtual, const char *PathReal, std::string Contenido){
@@ -1786,6 +1960,7 @@ int EXT::BloqueLibre(SPB *Super, const char *Path){
         if(Lectura=='0'){
             //ARREGLAR
             Super->s_block_start= Super->s_inode_start+Super->s_inodes_count*(int(sizeof (INO)));
+            //
             Out= Super->s_block_start+(i*Super->s_block_size);
             fseek(f,Ubi+i,SEEK_SET);
             char Actualizar='1';
@@ -1807,14 +1982,66 @@ int EXT::BloqueLibre(SPB *Super, const char *Path){
     return Out;
 
 }
-int EXT::CalcularCantidad(int Tamanio,int Tipo){
+int EXT::BloqueLibreConte(SPB *Super, const char *Path){
+    if(ValPrimeraPos==-1){
+        int Retorno=DarPrimeraPos(Super,Path);
+        //Poner Primera Posicion
+        ValPrimeraPos=Retorno;
+
+        if(Retorno==-1){
+            std::cout<<"No Hay Espacio Contiguo Para Colocar El Archivo "<<std::endl;
+        }else{
+            ValTamanio=0;
+        }
+        return Retorno;
+    }
+    ValTamanio++;
+    return ValPrimeraPos+(ValTamanio)*(int(sizeof (BAR)));
+}
+int EXT::DarPrimeraPos(SPB *Super, const char *Path){
+    int Out=-1;
+        FILE *f;
+        f=fopen(Path,"r+");
+        int Ubi=Super->s_bm_block_start;
+        int Tamanio=Super->s_blocks_count;
+        //Ubicarse En el BM
+        char Lectura;
+        int Contador=0;
+        for(int i=0;i<Tamanio;i++){
+            //Leer Cada Uno
+            fseek(f,Ubi+i,SEEK_SET);
+            fread(&Lectura,sizeof(Lectura),1,f);
+            //Si Libre Sumar 1
+            if(Lectura=='0'){
+                Contador++;
+                //Si Es El Primer '0' Indicar Salida
+                if(Contador==1)
+                    Out=Super->s_block_start+(i*Super->s_block_size);
+                //Si Supera El Espacio Buscado
+                if(Contador>=ValTamanio){
+                    //Colocar En El Primero
+                    Lectura='1';
+                    fseek(f,Ubi+i,SEEK_SET);
+                    fread(&Lectura,sizeof(Lectura),1,f);
+                    break;
+                }
+            }else{
+                //Si Ocupado Reiniciar
+                Contador=0;
+            }
+
+            //fwrite(&Actualizar,sizeof (Actualizar),1,f);
+        }
+
+        fclose(f);
+
+        return Out;
+}
+int EXT::CalcularCantidad(int Tamanio){
 
     int PesoEstructuras=0;
     //Tipo  1 EXT2  Tipo 2 EXT3
-    if(Tipo==1)
-      PesoEstructuras=4+3*int(sizeof (BCA))+int(sizeof (INO));
-    else
-      PesoEstructuras=4+3*int(sizeof (BCA))+int(sizeof (INO))+int(sizeof (JOR));
+    PesoEstructuras=4+3*int(sizeof (BCA))+int(sizeof (INO))+int(sizeof (JOR));
     Tamanio = Tamanio-int(sizeof (SPB));
     int Sal=Tamanio/PesoEstructuras;
     //std::cout<<"QQ "<<Tamanio <<"   "<<Tamanio%PesoEstructuras<<std::endl;
@@ -1847,10 +2074,7 @@ SPB EXT::LlenarSuperBloque(int Tipo,int Comienzo,int Cantidad){
     //Primer Inodo Libre
     //Primer Bloque Libre
     //Inicio BMInodo
-    if(Tipo==1)
-    Nuevo.s_bm_inode_start=Comienzo+int(sizeof (SPB))+4;
-    else
-    Nuevo.s_bm_inode_start=Comienzo+int(sizeof (SPB))+Cantidad*int(sizeof (JOR))+4;
+    Nuevo.s_bm_inode_start=Comienzo+int(sizeof (SPB))+Cantidad*int(sizeof (JOR));
     //Inicio BMBloque
     Nuevo.s_bm_block_start=Nuevo.s_bm_inode_start+Cantidad;
     //Inicio Inodo
@@ -1861,9 +2085,9 @@ SPB EXT::LlenarSuperBloque(int Tipo,int Comienzo,int Cantidad){
     Nuevo.s_first_blo=Nuevo.s_block_start;
     return Nuevo;
 }
-void EXT::EstructurarFormatoEXT2(int ComienzoParticion, int TamanioParticion, int TamanioStruct, std::string Direcc){
+void EXT::EstructurarFormatoEXT3(int ComienzoParticion, int TamanioParticion, int TamanioStruct, std::string Direcc,int Tipo){
     const char*Path =Direcc.data();
-    int Cantidad= CalcularCantidad(TamanioParticion,1);
+    int Cantidad= CalcularCantidad(TamanioParticion);
     int ComienzoEscritura=ComienzoParticion+TamanioStruct;
     //Tipo 1 EXT2
 
@@ -1918,6 +2142,9 @@ void EXT::EstructurarFormatoEXT2(int ComienzoParticion, int TamanioParticion, in
     fclose(f);
 
     CrearArchivoSimple(&Super,PrimerInodo,"/users.txt",Path,"1,G,root\n1,U,root,root,123\n");
+    Recuperacion *Recu= new Recuperacion();
+    if(Tipo==1)
+    Recu->IniciarJOUR(ComienzoEscritura,Path);
 }
 void EXT::IniciarBloqueCarpeta(BCA *Bloque){
     for(int i=0;i<4;i++){
@@ -1942,10 +2169,7 @@ void EXT::IniciarInodo(INO *Inodo, int i_uid, int i_gid, int i_size, int PrimerB
     Inodo->i_perm=2110110010;
 }
 
-void EXT::EstructurarFormatoEXT3(int ComienzoParticion, int TamanioParticion, int TamanioStruct, std::string Direcc){
 
-
-}
 
 void EXT::LlenarVacio(int Begin, int Size, char Character,const char *Path){
     FILE *f;

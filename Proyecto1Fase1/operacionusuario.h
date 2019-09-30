@@ -8,6 +8,7 @@ class OperacionUsuario
 public:
     IUG Permiso;
     //Operaciones Usuarios
+    std::string CambiarGrupo(std::string Usr,std::string Gru);
     std::string RemoverUsuario(std::string Usr);
     std::string CrearUsuario(std::string Usr,std::string Pwd,std::string Grp);
     //operaciones Grupo
@@ -25,6 +26,7 @@ public:
     bool Login(std::string Id, std::string Contra);
     OperacionUsuario();
     void Limpiar();
+    int Uid(std::string Busqueda);
 private:
     std::string StrGrupo();
     std::string StrUsuario();
