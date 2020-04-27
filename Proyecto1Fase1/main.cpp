@@ -7,7 +7,6 @@
 #include <stdio.h>
 #include "structs.h"
 #include "parser.h"
-
 #include "functions.h"
 #include "sistema.h"
 
@@ -23,52 +22,44 @@ int main()
 {
 
 
-   /* Functions *Fu = new Functions();
-    Sistema *Ex= new Sistema();
-    while (true) {
 
-        std::cout<<"--------------MANEJO DE RAID---------------"<<std::endl;
-        std::cout<<"Ingrese La Ubicacion Del Archivo A Procesar O Escriba Salir Para Salir"<<std::endl;
-        std::string Exec;
-        std::cin >> Exec;
+    printf("\n");
+
+
+
+    Functions *Fu = new Functions();
+    while (true) {
+        std::cout<<"\x1B[32m"<<"--------------MANEJO DE RAID---------------"<<std::endl;
+        std::cout<<"Ingrese El Comando , Escriba Salir O Limpiar "<<std::endl;
+        char Exec[1000];
+        std::cin.getline(Exec,1000);
+
+
 
         if(Fu->IF("salir",Exec)){
             std::cout<<"Saliendo Del Programa"<<std::endl;
             return 1;
+        }else if(Fu->IF("limpiar",Exec)){
+            std::system("clear");
+        }else{
+            std::ofstream Archivo("salida.txt");
+            Archivo <<Exec;
+            //Archivo<<"exec -path=/home/pc/Desktop/Fase.sh";
+            //Archivo<<"exec -path=/home/archivos/Fase.sh";
+            Archivo.close();
+            const char* x = "salida.txt";
+
+            FILE* input = fopen(x, "r" );
+            yyrestart(input);
+            yyparse();
+
+            //return 1;
         }
-        Ex->Ejecutar(Exec);
     }
-*/
 
 
-    /*Functions *Fun = new Functions();
-    ALE Num;
-    Num.Num=20;
-    Num.Siguiente=false;
-    FILE *f;
-    if(Fun->ExisteArchivo("Info.inf"))
-        f=fopen("Info.inf","r+");
-    else
-        f=fopen("Info.inf","w");
 
 
-    fseek(f,0,SEEK_SET);
-    fread(&Num,sizeof(ALE),1,f);
-
-*/
-
-    //
-
-    /*
-    const char* x = "/home/linuxlite/Documents/Archivos/temp.txt";
-    FILE* input = fopen(x, "r" );
-    yyrestart(input);//SE PASA LA CADENA DE ENTRADA A FLEX
-    yyparse();//SE INICIA LA COMPILACION*/
-
-
-    //std::string age;
-    //std::cin >> age;
-    //M();
 }
 
 

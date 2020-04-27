@@ -9,7 +9,7 @@ class Disco
 {
 public:
     //CHOWN
-    void  PropietarioArchivoParticion(const char *Nombre,const char *Path,int Tipo,int Perm,IUG Permiso);
+    void  PropietarioArchivoParticion(const char *Nombre,const char *Path,int Tipo,int Perm,IUG Permiso,const char *NameUsr);
     //Recovery
     std::queue<JOR> RecuperarInformacion(const char *Nombre);
     std::queue<JOR> Recuperar(int Comienzo,const char*Path);
@@ -25,7 +25,7 @@ public:
     //REN
     void  RenombrarArchivoParticion(const char *Nombre,const char *NuevoNombre,const char *Path,IUG Permiso);
     //CHMOD
-    void  PermisoArchivoParticion(const char *Nombre,const char *Path,int Tipo,int Perm,IUG Permiso);
+    void  PermisoArchivoParticion(const char *Nombre,const char *Path,int Tipo,int Perm,IUG Permiso,const char *NameUsr);
     //REM
     void  BorrarArchivoParticion(const char *Nombre,const char *Path,IUG Permiso);
     //CAT
@@ -36,8 +36,10 @@ public:
     void CrearArchivoParticion(const char *Nombre,const char *Path, char Padre,std::string Contenido,IUG Permiso);
     //MKDIR
     void CrearCarpetaParticion(const char *Nombre,const char *Path, char Padre,IUG Permiso);
-    //FDISK
-    void FormatearParticion(const char *Nombre,IUG Permiso,int Tipo);
+    //MKFS
+    void FormatearParticion(const char *Nombre,IUG Permiso,int Tipo,int Ext);
+    //Espacial
+    void Contar(const char *Nombre,bool Montar);
     //---------------------------------FASE1
 
 
@@ -53,7 +55,8 @@ public:
     void BorrarParticion(const char *Nombre);
     bool ExisteParticionMontada(const char *Nombre);
     void BuscarDisco(const char *Nombre);
-    void Reporte(const char *ID,const char *Path,const char *Tipo);
+
+    void Reporte(const char *ID,const char *Path,const char *Tipo,const char *Ruta);
 private:
     Functions *Fun=  new Functions();
     std::string GenerarApodo();

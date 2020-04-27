@@ -17,7 +17,7 @@ public:
     //Informacion
     void CargarDatos(std::string Texto);
     std::string IDMontado;
-    USU *UsuarioActual;
+    USU UsuarioActual;
     //Mensaje
     bool HayUsuarioEnElSistema();
     //Es Root

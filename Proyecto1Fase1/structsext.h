@@ -2,9 +2,7 @@
 #define STRUCTSEXT_H
 #include <time.h>
 #include "structs.h"
-struct  Inodo{
 
-};
 typedef struct  SuperBloque{
     int s_filesystem_type;
     int s_inodes_count;
@@ -49,10 +47,8 @@ typedef struct  BloqueArchivos{
 }BAR;
 
 typedef struct  Journaling{
-    int Siguiente;
     char Direccion[128];
-    char Contenido[128];
-    int UbicacionArchivo;
+    char Contenido[128];    
     int TamanioArchivo;
     IUG Info;
     int Tipo;

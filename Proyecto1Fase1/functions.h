@@ -5,9 +5,36 @@
 #include <time.h>
 #include "structs.h"
 #include <algorithm>
+#include "structsext.h"
+#include <ctime>
+#include <cstdlib>
+#include <iostream>
+#include <fstream>
+#include <algorithm>
+#include <fstream>
+#include <iostream>
+#include <string>
+#include <stdio.h>
+#include <string.h>
+#include <sstream>
+
 class Functions
 {
 public:
+
+    //Llenar Espacios
+    void LlenarVacio(int Begin, int Size, char Character,const char *Path);
+    //Calcular la cantidad de estructruas
+    int CalcularCantidad(int Tamanio,int Tipo);
+    //CrearFormato
+    SPB LlenarSuperBloque(int Tipo,int Comienzo,int Cantidad);
+    //Inicio
+    void IniciarInodo(INO *Inodo,int i_uid,int i_gid,int i_size,int PrimerBloque,char Tipo,int Perm);
+    void IniciarBloqueCarpeta(BCA *Bloque);
+    //
+    void FillName(char Arra[16],const char *Input);
+    void FillDisk(int Begin,int Size,char Character,const char *Path);
+    void FillPAR(PAR *NPAR);
     Functions();
     int GenerarNumeroRandom();
     void Fecha(struct tm *Dita);
@@ -39,6 +66,7 @@ private:
     int FirstFit(int Size,const char *Path);
     int WorstFit(int Size,const char *Path);
     int BestFit(int Size,const char *Path);
+
 
 };
 

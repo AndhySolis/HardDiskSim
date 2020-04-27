@@ -11,17 +11,17 @@ typedef struct  Identificador{
 }IUG;
 
 typedef struct  Grupo{
-    int Gid;
-    std::string Tipo;
-    std::string Grupo;
+    int Gid=0;
+    std::string Tipo="";
+    std::string Grupo="";
 }GRU;
 
 typedef struct  Usuario{
-    int Uid;
-    std::string Tipo;
-    GRU *Grupo;
-    std::string Usuario;
-    std::string Contrasenia;
+    int Uid=-1;
+    std::string Tipo="";
+    GRU Grupo;
+    std::string Usuario="";
+    std::string Contrasenia="";
 }USU;
 
 typedef struct  Avaliable{
@@ -65,6 +65,7 @@ typedef struct Montado{
     PAR Particion;
     EBR Logica;
     int Numero;
+    std::string Nombre;
     bool EsLogica;
 }MOU;
 

@@ -5,10 +5,11 @@
 #include <iostream>
 #include <QString>
 int columna=0;
+
 int anterior=0;
 int salto=1;
 %}
-direccion \/({identificador}\/)*{identificador}\.(disk|png|pdf|sh|txt)
+direccion \/({identificador}\/)*{identificador}(\.(disk|png|pdf|sh|txt|jpg|jpeg))?
 comentario  #[^\r\n]*[^\r\n]
 identificador ({letra}|"_")({letra}|{numero}|"_")*
 letra [a-zñA-ZÑ]
@@ -16,7 +17,7 @@ numero (-)?[0-9]+
 salto [\n]
 cadena \"[^"\""]*\"
 
-igual =
+igual =|(\~\:\~)
 mkdisk mkdisk
 rmdisk rmdisk
 fdisk fdisk
@@ -32,6 +33,7 @@ path -path
 typep -type
 deletep -delete
 name -name
+ruta -ruta
 add -add
 id -id
 
@@ -69,15 +71,18 @@ recovery recovery
 loss loss
 
 %%
-{salto} {columna=0;salto=salto+1;}
-{comentario}  {    }
+{salto} {yylineno=yylineno+1; columna=0;}
+{comentario}  {  }
 
+
+{dest}          {  columna=columna+ anterior;  anterior = strlen(yytext);strcpy(yylval.TEXT, yytext); return dest;}
 {fs}          {  columna=columna+ anterior;  anterior = strlen(yytext);strcpy(yylval.TEXT, yytext); return fs;}
 {usr}          {  columna=columna+ anterior;  anterior = strlen(yytext);strcpy(yylval.TEXT, yytext); return usr;}
 {pwd}          {  columna=columna+ anterior;  anterior = strlen(yytext);strcpy(yylval.TEXT, yytext); return pwd;}
 {logout}          {  columna=columna+ anterior;  anterior = strlen(yytext);strcpy(yylval.TEXT, yytext); return logout;}
 {login}          {  columna=columna+ anterior;  anterior = strlen(yytext);strcpy(yylval.TEXT, yytext); return login;}
 {mkfs}          {  columna=columna+ anterior;  anterior = strlen(yytext);strcpy(yylval.TEXT, yytext); return mkfs;}
+{rmgrp}          {  columna=columna+ anterior;  anterior = strlen(yytext);strcpy(yylval.TEXT, yytext); return rmgrp;}
 {mkgrp}          {  columna=columna+ anterior;  anterior = strlen(yytext);strcpy(yylval.TEXT, yytext); return mkgrp;}
 {grp}          {  columna=columna+ anterior;  anterior = strlen(yytext);strcpy(yylval.TEXT, yytext); return grp;}
 {mkusr}          {  columna=columna+ anterior;  anterior = strlen(yytext);strcpy(yylval.TEXT, yytext); return mkusr;}
@@ -106,7 +111,7 @@ loss loss
 
 
 
-
+{ruta}          {  columna=columna+ anterior;  anterior = strlen(yytext);strcpy(yylval.TEXT, yytext); return ruta;}
 {direccion}          {  columna=columna+ anterior;  anterior = strlen(yytext);strcpy(yylval.TEXT, yytext); return direccion;}
 {exec}          {  columna=columna+ anterior;  anterior = strlen(yytext);strcpy(yylval.TEXT, yytext); return exec;}
 {igual}          {  columna=columna+ anterior;  anterior = strlen(yytext);strcpy(yylval.TEXT, yytext); return igual;}
@@ -131,6 +136,6 @@ loss loss
 {cadena}          {   columna=columna+ anterior;  anterior = strlen(yytext);strcpy(yylval.TEXT, yytext); return cadena;}
 {identificador}          {   columna=columna+ anterior;  anterior = strlen(yytext);strcpy(yylval.TEXT, yytext); return identificador;}
 
-[[:blank:]]     { /*Se ignoran*/ }
-.               {std::cout <<yytext<<"Error Lexico "<<salto <<"  "<<columna<<std::endl;}
+[[:blank:]]     { /*Se ignoran*/ columna++;}
+.               {/*std::cout <<yytext<<"Error Lexico ?"<<salto <<"?  "<<columna<<std::endl;*/}
 %%

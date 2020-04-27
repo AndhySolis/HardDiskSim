@@ -1,19 +1,157 @@
 #include "functions.h"
-#include <ctime>
-#include <cstdlib>
-#include <iostream>
-#include <fstream>
-#include <algorithm>
-#include <fstream>
-#include <iostream>
-#include <string>
-#include <stdio.h>
-#include <string.h>
-#include <sstream>
 
+#include "functionsext.h"
 Functions::Functions()
 {
 
+}
+
+void Functions::IniciarBloqueCarpeta(BCA *Bloque){
+    for(int i=0;i<4;i++){
+        Bloque->content[i].b_inodo=-1;
+        for(int j=0;j<12;j++){
+        Bloque->content[i].b_name[j]='*';
+        }
+    }
+}
+void Functions::IniciarInodo(INO *Inodo, int i_uid, int i_gid, int i_size, int PrimerBloque, char Tipo,int Perm){
+    Inodo->i_uid=i_uid;
+    Inodo->i_gid=i_gid;
+    Inodo->i_size=i_size;
+    Fecha(&Inodo->i_atime);
+    Fecha(&Inodo->i_ctime);
+    Fecha(&Inodo->i_mtime);
+    Inodo->i_block[0]=PrimerBloque;
+    for(int i=1;i<16;i++){
+        Inodo->i_block[i]=-1;
+    }
+    Inodo->i_type=Tipo;
+    Inodo->i_perm=2110110010;
+}
+void Functions::LlenarVacio(int Begin, int Size, char Character,const char *Path){
+    FILE *f;
+    f=fopen(Path,"r+");
+    int Kilo=Size/1024;
+    if(Kilo>0){
+        char Buffi[1024];
+        for (int i=0;i<1024;i++) {
+            Buffi[i]=Character;
+        }
+
+        fseek(f,Begin,SEEK_SET);
+        for(int i=0;i<Kilo;i++){
+
+            fwrite(&Buffi,sizeof (Buffi),1,f);
+        }
+
+    }
+    Size=Size-Kilo*1024;
+    Begin=Begin+(Kilo*1024);
+    fseek(f,Begin,SEEK_SET);
+    for(int i=0;i<Size;i++){
+
+        fwrite(&Character,sizeof (Character),1,f);
+    }
+    fclose(f);
+}
+
+int Functions::CalcularCantidad(int Tamanio,int Tipo){
+
+    int PesoEstructuras=0;
+    //Tipo  0 EXT2  Tipo 1 EXT3
+    PesoEstructuras=4+3*int(sizeof (BCA))+int(sizeof (INO))+(int(sizeof (JOR))*Tipo);
+    Tamanio = Tamanio-int(sizeof (SPB));
+    int Sal=Tamanio/PesoEstructuras;
+    //std::cout<<"QQ "<<Tamanio <<"   "<<Tamanio%PesoEstructuras<<std::endl;
+    return Sal;
+}
+SPB Functions::LlenarSuperBloque(int Tipo,int Comienzo,int Cantidad){
+    SPB Nuevo;
+    //TipoDeFormato
+    Nuevo.s_filesystem_type=Tipo;
+    //Cantidad Inodos
+    Nuevo.s_inodes_count=Cantidad;
+    //Cantidad Bloques
+    Nuevo.s_blocks_count=Cantidad*3;
+    //Cantidad Inodos Libre
+    Nuevo.s_free_inodes_count=Cantidad;
+    //Cantidad Bloques Libre
+    Nuevo.s_free_blocks_count=Cantidad*3;
+    //Fecha Montado
+    Fecha(&Nuevo.s_mtime);
+    //Fecha Desmontado
+    Fecha(&Nuevo.s_umtime);
+    //VecesMontado
+    Nuevo.s_mnt_count=0;
+    //NumeroMagico
+    Nuevo.s_magic=0xEF53;
+    //Tamaño Inodo
+    Nuevo.s_inode_size=int(sizeof (INO));
+    //Tamaño Bloque
+    Nuevo.s_block_size=int(sizeof (BAP));
+    //Primer Inodo Libre
+    //Primer Bloque Libre
+    //Inicio BMInodo
+    Nuevo.s_bm_inode_start=Comienzo+int(sizeof (SPB))+Cantidad*int(sizeof (JOR))*Tipo;
+    //Inicio BMBloque
+    Nuevo.s_bm_block_start=Nuevo.s_bm_inode_start+Cantidad;
+    //Inicio Inodo
+    Nuevo.s_inode_start=Nuevo.s_bm_block_start+Cantidad*3;
+    Nuevo.s_first_ino=Nuevo.s_inode_start;
+    //Inicio Bloque
+    Nuevo.s_block_start= Nuevo.s_inode_start+Cantidad*(int(sizeof (INO)));
+    Nuevo.s_first_blo=Nuevo.s_block_start;
+    return Nuevo;
+}
+
+
+
+
+
+
+
+
+
+void Functions::FillName(char *Arra, const char *Input){
+    Arra[0]='C';
+    for(int i=0;i<16;i++){
+        Arra[i]=' ';
+    }
+    strcpy(Arra, Input);
+}
+void Functions::FillPAR(PAR *NPAR){
+    NPAR->part_status='f';
+    NPAR->part_type='p';
+    NPAR->part_fit[0]='f';
+    NPAR->part_fit[1]='f';
+    NPAR->part_start=0;
+    NPAR->part_size=0;
+}
+void Functions::FillDisk(int Begin, int Size, char Character,const char *Path){
+    FILE *f;
+    f=fopen(Path,"r+");
+    int Kilo=Size/1024;
+    if(Kilo>0){
+        char Buffi[1024];
+        for (int i=0;i<1024;i++) {
+            Buffi[i]=Character;
+        }
+
+        fseek(f,Begin,SEEK_SET);
+        for(int i=0;i<Kilo;i++){
+
+            fwrite(&Buffi,sizeof (Buffi),1,f);
+        }
+
+    }
+    Size=Size-Kilo*1024;
+    Begin=Begin+(Kilo*1024);
+    fseek(f,Begin,SEEK_SET);
+    for(int i=0;i<Size;i++){
+
+        fwrite(&Character,sizeof (Character),1,f);
+    }
+    fclose(f);
 }
 std::string Functions::DecimalBinario(char Decimal){
     std::string Retorno="";
@@ -83,7 +221,6 @@ void Functions::EscribirRandom(int Num){
     //std::cout<<Escritura<<std::endl;
 }
 bool Functions::Valido(int Num){
-    Functions *F = new Functions();
     std::ifstream t("Dita.txt");
     std::stringstream buffer;
     buffer << t.rdbuf();
@@ -765,86 +902,4 @@ int Functions::FileSize(const char *Path){
 void Functions::Out(const char *Path){
     qDebug() << Path;
 }
-/*
-int Functions::LogicalFirstFit(int Size, const char *Path, int Begin, int End){
-    FILE *f;
 
-    EBR Logic;
-    //Logic.part_next=0;
-    int LogicIndex=Begin;
-
-    f=fopen(Path,"r+");
-    if (!f){
-        return-1;
-    }
-
-    fseek(f,LogicIndex,SEEK_SET);
-    fread(&Logic,sizeof(EBR),1,f);
-    std::queue <AVA> Dita;
-    EBR First;
-    fseek(f,Begin,SEEK_SET);
-    fread(&First,sizeof(EBR),1,f);
-    EBR Next;
-    while(LogicIndex!=-1){
-
-        fseek(f,LogicIndex,SEEK_SET);
-        fread(&Logic,sizeof(EBR),1,f);
-        LogicIndex=Logic.part_next;
-
-        if(LogicIndex!=-1){
-            fseek(f,LogicIndex,SEEK_SET);
-            fread(&Next,sizeof(EBR),1,f);
-
-            AVA NewAva;
-            NewAva.Begin=Logic.part_start+Logic.part_size;
-            NewAva.End=Next.part_start;
-            NewAva.Size=NewAva.End-NewAva.Begin;
-            std::cout<<NewAva.Begin<<"___"<<NewAva.End<<"___"<<NewAva.Size<<std::endl;
-            Dita.push(NewAva);
-
-            Begin=Next.part_start+Next.part_size;
-        //Es el primero Y no tiene siguiente ARREGLAR
-        }else if (Logic.part_start==Begin && strcmp(Logic.part_name, First.part_name)==0 ) {
-
-            AVA NewAva;
-            NewAva.Begin=Logic.part_start+Logic.part_size;
-            NewAva.End=End;
-            NewAva.Size=NewAva.End-NewAva.Begin;
-            Dita.push(NewAva);
-
-            Begin=End;
-
-        }
-    }
-
-    fclose(f);
-
-
-
-    AVA NewAva;
-    NewAva.Begin=Begin;
-    NewAva.End=End;
-    NewAva.Size=NewAva.End-NewAva.Begin;
-    Dita.push(NewAva);
-
-    //Cola para los fit
-
-
-
-
-        while(!Dita.empty()){
-
-            NewAva=Dita.front();
-            //std::cout<<NewAva.Begin<<"___"<<NewAva.End<<"___"<<NewAva.Size<<std::endl;
-            if(NewAva.Size>0){
-                if(NewAva.Size>=Size){
-
-                    return NewAva.Begin;
-                }
-            }
-            Dita.pop();
-        }
-        return -1;
-}
-
-*/

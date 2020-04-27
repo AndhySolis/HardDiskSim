@@ -14,7 +14,7 @@ std::string OperacionUsuario::CambiarGrupo(std::string Usr, std::string Gru){
                     std::cout<<"No Se Encontro Grupo "+Gru<<std::endl;
                     break;
                 }
-                Cambio.Grupo=&Gr;
+                Cambio.Grupo=Gr;
                 Cambio.Uid=Usuario.Uid;
                 Cambio.Usuario=Usuario.Usuario;
                 Cambio.Contrasenia=Usuario.Contrasenia;
@@ -64,11 +64,11 @@ std::string OperacionUsuario::CrearUsuario(std::string Usr,std::string Pwd,std::
         USU UsuarioNuevo;
         UsuarioNuevo.Uid=SistemaUsuario->length()+1;
         UsuarioNuevo.Tipo="U";
-        UsuarioNuevo.Grupo=&GrupoCreado;
+        UsuarioNuevo.Grupo=GrupoCreado;
         UsuarioNuevo.Usuario=Usr;
         UsuarioNuevo.Contrasenia=Pwd;
         SistemaUsuario->push_front(UsuarioNuevo);
-        Retorno=Retorno+std::to_string(UsuarioNuevo.Uid)+","+UsuarioNuevo.Tipo+","+UsuarioNuevo.Grupo->Grupo+","+UsuarioNuevo.Usuario+","+UsuarioNuevo.Contrasenia+"\n";
+        Retorno=Retorno+std::to_string(UsuarioNuevo.Uid)+","+UsuarioNuevo.Tipo+","+UsuarioNuevo.Grupo.Grupo+","+UsuarioNuevo.Usuario+","+UsuarioNuevo.Contrasenia+"\n";
     }
     return Retorno;
 }
@@ -111,7 +111,7 @@ std::string OperacionUsuario::StrUsuario(){
     USU Usuario;
     for (int i=0;i<Longitud;i++) {
         Usuario=SistemaUsuario->at(i);
-        Retorno=Retorno+std::to_string(Usuario.Uid)+","+Usuario.Tipo+","+Usuario.Usuario+","+Usuario.Grupo->Grupo+","+Usuario.Contrasenia+"\n";
+        Retorno=Retorno+std::to_string(Usuario.Uid)+","+Usuario.Tipo+","+Usuario.Usuario+","+Usuario.Grupo.Grupo+","+Usuario.Contrasenia+"\n";
     }
     return Retorno;
 }
@@ -124,9 +124,10 @@ std::string OperacionUsuario::CrearGrupo(std::string Nombre){
         GRU GrupoNuevo;
         GrupoNuevo.Gid=SistemaGrupo->length()+1;
         GrupoNuevo.Tipo="G";
-        GrupoNuevo.Grupo="Nombre";
+        GrupoNuevo.Grupo=Nombre;
         SistemaGrupo->push_front(GrupoNuevo);
         Retorno=Retorno+std::to_string(GrupoNuevo.Gid)+","+GrupoNuevo.Tipo+","+GrupoNuevo.Grupo+"\n";
+
     }
     return Retorno;
 }
@@ -137,7 +138,12 @@ void OperacionUsuario::Limpiar(){
     this->IDMontado="";
     this->SistemaGrupo= new QList<GRU>;
     this->SistemaUsuario= new QList<USU>;
-    UsuarioActual=nullptr;
+    UsuarioActual.Uid=-1;
+    UsuarioActual.Tipo="";
+    GRU NuevoG;
+    UsuarioActual.Grupo=NuevoG;
+    UsuarioActual.Usuario="";
+    UsuarioActual.Contrasenia="";
 }
 bool OperacionUsuario::Login(std::string Id, std::string Contra){
     USU Usu= BuscarUsuario(Id);
@@ -145,10 +151,27 @@ bool OperacionUsuario::Login(std::string Id, std::string Contra){
         std::cout<<"No Se Encontro El Usuario"<<std::endl;
         return false;
     }
+
     if(Fun->IFEspecial(Contra,Usu.Contrasenia)){
-        UsuarioActual=&Usu;
-        Permiso.Gid=Usu.Grupo->Gid;
+        USU Nuevo;
+
+
+        //UsuarioActual=&Nuevo;
+
+
+
+        UsuarioActual.Uid=Usu.Uid;
+        UsuarioActual.Tipo=Usu.Tipo;
+        UsuarioActual.Grupo=Usu.Grupo;
+        UsuarioActual.Usuario=Id.data();
+        UsuarioActual.Contrasenia=Contra.data();
+
+
+
+
+        Permiso.Gid=Usu.Grupo.Gid;
         Permiso.Uid=Usu.Uid;
+
         return true;
      }
     std::cout<<"Contrasenia Incorrecta"<<std::endl;
@@ -160,7 +183,12 @@ OperacionUsuario::OperacionUsuario()
     this->Fun= new Functions();
     this->SistemaGrupo= new QList<GRU>;
     this->SistemaUsuario= new QList<USU>;
-    UsuarioActual=nullptr;
+    UsuarioActual.Uid=-1;
+    UsuarioActual.Tipo="";
+    GRU NuevoG;
+    UsuarioActual.Grupo=NuevoG;
+    UsuarioActual.Usuario="";
+    UsuarioActual.Contrasenia="";
 }
 void OperacionUsuario::CargarDatos(std::string Texto){
 
@@ -227,11 +255,11 @@ void OperacionUsuario::Comas(std::string Texto){
                 if(Gru.Gid==-1){
                     std::cout<<"No Se Encontro El Grupo '"<<token<<"' Para El Usuario '"<<UsuarioNuevo.Uid<<"'"<<std::endl;
                 }
-                UsuarioNuevo.Grupo=&Gru;
+                UsuarioNuevo.Grupo=Gru;
                 break;
             }
             case 3:{
-                UsuarioNuevo.Usuario=token;
+                UsuarioNuevo.Usuario=token.data();
                 break;
             }
             }
@@ -256,7 +284,7 @@ int OperacionUsuario::CantidadComas(std::string Texto){
 bool OperacionUsuario::HayUsuarioEnElSistema(){
 
 
-    if(UsuarioActual!=nullptr)
+    if(UsuarioActual.Uid!=-1)
         return true;
     else{
 
@@ -264,7 +292,7 @@ bool OperacionUsuario::HayUsuarioEnElSistema(){
         }
 }
 bool OperacionUsuario::UsuarioActualEsRoot(){
-    if(UsuarioActual->Grupo->Gid==1)
+    if(UsuarioActual.Grupo.Gid==1)
         return true;
     else
         return false;
@@ -291,7 +319,7 @@ USU OperacionUsuario::BuscarUsuario(std::string Nombre){
     USU Usu;
 
     for (int i=0;i<Longitud;i++) {
-        Usu=SistemaUsuario->at(i);        
+        Usu=SistemaUsuario->at(i);
         if(Fun->IFEspecial(Usu.Usuario,Nombre)){
             if(Usu.Uid!=0)
                 return Usu;

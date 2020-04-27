@@ -1,4 +1,4 @@
-/* A Bison parser, made by GNU Bison 3.3.2.  */
+/* A Bison parser, made by GNU Bison 3.4.1.  */
 
 /* Bison interface for Yacc-like parsers in C
 
@@ -103,16 +103,16 @@ extern int yydebug;
     chgrp = 309,
     pausep = 310,
     recovery = 311,
-    loss = 312
+    loss = 312,
+    ruta = 313
   };
 #endif
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
-
 union YYSTYPE
 {
-#line 142 "sintactico.y" /* yacc.c:1921  */
+#line 168 "sintactico.y"
 
 
 //se especifican los tipo de valores para los no terminales y lo terminales
@@ -137,9 +137,9 @@ struct STRSFIN* SFIN;
 struct STRSCHOW* SCHOW;
 struct STRSCHG* SCHG;
 
-#line 141 "parser.h" /* yacc.c:1921  */
-};
+#line 141 "parser.h"
 
+};
 typedef union YYSTYPE YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define YYSTYPE_IS_DECLARED 1

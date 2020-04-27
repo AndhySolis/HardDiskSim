@@ -8,6 +8,11 @@
 #include "reports.h"
 #include "operacionusuario.h"
 #include "disco.h"
+#include "Fase1/mkdisk.h"
+#include "Fase1/fdiskadd.h"
+#include "Fase1/fdiskdelete.h"
+#include "Fase1/rmdisk.h"
+#include "Fase1/fdisk.h"
 //Para el mount
 
 //Para Los Fit
@@ -60,16 +65,17 @@ public:
     //MKDIR
     void MKDIR(const char *Path, char Padre);
     //MKFS
-    void MKFS(const char *Id,const char *Type,int Tipo);
+    void MKFS(const char *Id,int Type,int Tipo);
     //REP
-    void REP(const char *Id,const char *Name,const char *Path);
+    void REP(const char *Id, const char *Name, const char *Path,const char *Ruta);
+
     //AGREGAR
     void FDISKAdd(int Size,const char *Path,const char *Name);
     //MONTAR
     void UNMOUNT(const char *Name);
     void MOUNT(const char *Path,const char *Name);
     //RMDISK
-    void RMDISK(const char *Path);
+    void Rmdisk(const char *Path);
     //MKDsik
     void Mkdisk(int Size,const char Fit[2],char Unit,const char *Path);
     //FDisk
@@ -79,43 +85,22 @@ public:
 
     Menu();
 private:
-    bool DisponibleBorrarParticionMontada(const char *Id);
-    bool DisponibleBorrarDisco(const char *Path);
+
 
     void LimpiarDiscosVacios();
-    void ReducirLogica(int Size, const char *Path, EBR Ext,const char *Name);
-    void ReducirPrimaria(int Size,const char *Path,int Indice);
-    void AgregarMas(int Size,const char *Path,const char *Name);
-    void AgregarMenos(int Size,const char *Path,const char *Name);
+
     OperacionUsuario *OpeU= new OperacionUsuario();
     Functions *Fun=  new Functions();
     Reports *Repo=  new Reports();
     Disco *PrimerDisco = nullptr;
 
 
-    //MOUNT
 
 
-    //
-    //FDISK
-        //FDISKDELETE
 
-        void DeleteFastLogic(EBR InputLogic,const char *Path);
-        void DeleteFullLogic(EBR InputLogic,const char *Path);
-        void DeleteFast(PAR Parti,const char *Path);
-        void DeleteFull(PAR Parti,const char *Path);
-
-        //
-    void FillPAR(PAR *NPAR);
-
-    void FillName(char Arra[16],const char *Input);
-    void FillDisk(int Begin,int Size,char Character,const char *Path);
-    void NewPrimary(int Size,const char Fit[2],char Unit,const char *Path,const char *Name);
-    void NewExtended(int Size,const char Fit[2],char Unit,const char *Path,const char *Name);
-    void NewLogical(int Size,const char Fit[2],char Unit,const char *Path,const char *Name);
 
     int HasBytes(const char *Path);
-    int HasSlot(const char *Path);
+
     void Resize();
     void DeleteParth();
     //Utilidades
