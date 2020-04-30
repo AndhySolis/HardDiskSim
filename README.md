@@ -1,4 +1,3 @@
-# HardDiskSim
-Simulador de almacenamiento secundario, este proyecto simula el sistema de archivos Ext2 y Ext3 maneja apuntadores indirectos hasta
-el tercer nivel
+# Simulador Ext2 y Ext3
+Simulador del sistema de archivo usado en sistemas gnu/linux 
 Ext3 Usac
